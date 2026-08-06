@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -8,6 +7,33 @@
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f4f4f4; }
         header { background: #007bff; color: white; padding: 15px; text-align: center; border-radius: 8px; }
+        
+        /* CSS untuk Formulir Data Diri */
+        .form-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        /* CSS untuk Katalog */
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
         .card img { width: 100%; border-radius: 5px; }
@@ -21,6 +47,32 @@
         <h1>Warung Online</h1>
         <p>Marketplace Sederhana via Termux</p>
     </header>
+
+    <div class="form-container">
+        <h2>Isi Data Diri Pembeli</h2>
+        <form>
+            <div class="form-group">
+                <label for="gender">Jenis Kelamin:</label>
+                <select id="gender" name="gender">
+                    <option value="">-- Pilih Jenis Kelamin --</option>
+                    <option value="Pria">Pria</option>
+                    <option value="Wanita">Wanita</option>
+                    <option value="Gay">Gay</option>
+                    <option value="Lesbi">Lesbi</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="lokasi">Tempat Tinggal:</label>
+                <input type="text" id="lokasi" name="lokasi" placeholder="Masukkan kota/alamat Anda">
+            </div>
+
+            <div class="form-group">
+                <label for="umur">Umur:</label>
+                <input type="number" id="umur" name="umur" placeholder="Masukkan umur Anda">
+            </div>
+        </form>
+    </div>
 
     <div class="grid">
         <div class="card">
