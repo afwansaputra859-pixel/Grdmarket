@@ -7,33 +7,11 @@
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f4f4f4; }
         header { background: #007bff; color: white; padding: 15px; text-align: center; border-radius: 8px; }
-        
-        /* CSS untuk Formulir Data Diri */
-        .form-container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .form-group {
-            margin-bottom: 15px;
-            text-align: left;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        /* CSS untuk Katalog */
+        .form-container { background: white; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .btn-submit { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
         .card img { width: 100%; border-radius: 5px; }
@@ -50,27 +28,32 @@
 
     <div class="form-container">
         <h2>Isi Data Diri Pembeli</h2>
-        <form>
+        <form id="formPembeli">
+            <div class="form-group">
+                <label for="nama">Nama Lengkap:</label>
+                <input type="text" id="nama" placeholder="Masukkan nama Anda" required>
+            </div>
+
             <div class="form-group">
                 <label for="gender">Jenis Kelamin:</label>
-                <select id="gender" name="gender">
+                <select id="gender" required>
                     <option value="">-- Pilih Jenis Kelamin --</option>
                     <option value="Pria">Pria</option>
                     <option value="Wanita">Wanita</option>
-                    <option value="Gay">Gay</option>
-                    <option value="Lesbi">Lesbi</option>
                 </select>
             </div>
 
             <div class="form-group">
                 <label for="lokasi">Tempat Tinggal:</label>
-                <input type="text" id="lokasi" name="lokasi" placeholder="Masukkan kota/alamat Anda">
+                <input type="text" id="lokasi" placeholder="Masukkan kota/alamat Anda" required>
             </div>
 
             <div class="form-group">
                 <label for="umur">Umur:</label>
-                <input type="number" id="umur" name="umur" placeholder="Masukkan umur Anda">
+                <input type="number" id="umur" placeholder="Masukkan umur Anda" required>
             </div>
+
+            <button type="button" class="btn-submit" onclick="kirimKeWA()">Kirim Data Diri</button>
         </form>
     </div>
 
@@ -88,6 +71,30 @@
             <a href="https://wa.me/6283137201752?text=Halo,%20saya%20mau%20beli%20Produk%20B" class="btn-wa">Beli via WA</a>
         </div>
     </div>
+
+    <script>
+        function kirimKeWA() {
+            var nama = document.getElementById("nama").value;
+            var gender = document.getElementById("gender").value;
+            var lokasi = document.getElementById("lokasi").value;
+            var umur = document.getElementById("umur").value;
+
+            if (nama === "" || gender === "" || lokasi === "" || umur === "") {
+                alert("Harap isi semua data terlebih dahulu!");
+                return;
+            }
+
+            var nomorWA = "6283137201752"; // Nomor WhatsApp Anda
+            var pesan = "Halo Admin, berikut data diri saya:%0A" +
+                        "- Nama: " + encodeURIComponent(nama) + "%0A" +
+                        "- Jenis Kelamin: " + encodeURIComponent(gender) + "%0A" +
+                        "- Tempat Tinggal: " + encodeURIComponent(lokasi) + "%0A" +
+                        "- Umur: " + encodeURIComponent(umur) + " tahun";
+
+            var url = "https://wa.me/" + nomorWA + "?text=" + pesan;
+            window.open(url, '_blank');
+        }
+    </script>
 
 </body>
 </html>
