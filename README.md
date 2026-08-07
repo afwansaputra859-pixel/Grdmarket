@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marketplace Sederhana</title>
+    <title>Digital Marketplace</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f4f4f4; }
         header { background: #007bff; color: white; padding: 15px; text-align: center; border-radius: 8px; }
@@ -22,8 +22,8 @@
 <body>
 
     <header>
-        <h1>Digital martketplace</h1>
-        <p>By:Gilang ganteng</p>
+        <h1>Digital Marketplace</h1>
+        <p>By: Gilang ganteng</p>
     </header>
 
     <div class="form-container">
@@ -40,8 +40,6 @@
                     <option value="">-- Pilih Jenis Kelamin --</option>
                     <option value="Pria">Pria</option>
                     <option value="Wanita">Wanita</option>
-                    <option value="Gay">Gay</option>
-                    <option value="Lesbi">Lesbi</option>
                 </select>
             </div>
 
@@ -86,7 +84,7 @@
                 return;
             }
 
-            var nomorWA = "6283137201752"; // Nomor WhatsApp Anda
+            var nomorWA = "6283137201752";
             var pesan = "Halo Admin, berikut data diri saya:%0A" +
                         "- Nama: " + encodeURIComponent(nama) + "%0A" +
                         "- Jenis Kelamin: " + encodeURIComponent(gender) + "%0A" +
@@ -96,6 +94,24 @@
             var url = "https://wa.me/" + nomorWA + "?text=" + pesan;
             window.open(url, '_blank');
         }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
+            authDomain: "website-611eb.firebaseapp.com",
+            projectId: "website-611eb",
+            storageBucket: "website-611eb.firebasestorage.app",
+            messagingSenderId: "90650745026",
+            appId: "1:90650745026:web:7c9dc54997c4970c8e035b",
+            measurementId: "G-6L3SYVWTGS"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
     </script>
 
 </body>
