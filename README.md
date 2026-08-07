@@ -59,13 +59,13 @@
 
     <div class="grid">
         <div class="card">
-            <img src="https://imgur.com/a/Y3qApO7#1oS4GMY" alt="Produk 1">
+            <img src="https://imgur.com/a/Y3qApO7#1oS4GMY.jpg" alt="Produk 1">
             <h3>Produk A</h3>
             <p class="price">Rp 50.000</p>
             <a href="https://wa.me/6283137201752?text=Halo,%20saya%20mau%20beli%20Produk%20A" class="btn-wa">Beli via WA</a>
         </div>
         <div class="card">
-            <img src="https://imgur.com/a/Y3qApO7#AMowbG5" alt="Produk 2">
+            <img src="https://imgur.com/a/Y3qApO7#AMowbG5.jpg" alt="Produk 2">
             <h3>Produk B</h3>
             <p class="price">Rp 100.000</p>
             <a href="https://wa.me/6283137201752?text=Halo,%20saya%20mau%20beli%20Produk%20B" class="btn-wa">Beli via WA</a>
