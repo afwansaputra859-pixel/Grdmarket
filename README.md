@@ -22,8 +22,8 @@
 <body>
 
     <header>
-        <h1>Warung Online</h1>
-        <p>Marketplace Sederhana via Termux</p>
+        <h1>Digital martketplace</h1>
+        <p>By:Gilang ganteng</p>
     </header>
 
     <div class="form-container">
@@ -40,6 +40,8 @@
                     <option value="">-- Pilih Jenis Kelamin --</option>
                     <option value="Pria">Pria</option>
                     <option value="Wanita">Wanita</option>
+                    <option value="Gay">Gay</option>
+                    <option value="Lesbi">Lesbi</option>
                 </select>
             </div>
 
