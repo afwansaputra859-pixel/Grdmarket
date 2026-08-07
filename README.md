@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <script>
-        // Pengecekan Login
+        // Pengecekan Login: Jika belum login, paksa ke login.html
         if (sessionStorage.getItem("isLoggedIn") !== "true") {
             window.location.href = "login.html";
         }
@@ -96,23 +96,39 @@
             document.getElementById("paymentModal").style.display = "none";
         }
 
-        // Konfirmasi Bayar & Kurangi Stok
+        // Konfirmasi Bayar, Kurangi Stok, dan Langsung Masuk ke Chat
         function prosesBayar() {
             var elemenStok = document.getElementById("stok-" + idStokDipilih);
             var jumlahStok = parseInt(elemenStok.innerText);
 
-            // Kurangi stok
             if (jumlahStok > 0) {
                 elemenStok.innerText = jumlahStok - 1;
             }
 
-            alert("Terima kasih! Pesanan Anda untuk " + produkDipilih + " sedang diproses. Anda akan diarahkan ke Chat Penjual.");
+            alert("Terima kasih! Pesanan diproses. Mengarahkan ke Chat Penjual...");
             tutupModal();
 
-            // Nanti di Tahap 3 ini akan mengarahkan ke halaman chat internal web
-            // Untuk sementara diarahkan ke WA dulu
-            window.location.href = "https://wa.me/6283137201752?text=Halo%20Admin,%20saya%20sudah%20bayar%20pesanan:%20" + encodeURIComponent(produkDipilih);
+            // Pindah langsung ke chat.html membawa info produk
+            window.location.href = "chat.html?produk=" + encodeURIComponent(produkDipilih);
         }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
+            authDomain: "website-611eb.firebaseapp.com",
+            projectId: "website-611eb",
+            storageBucket: "website-611eb.firebasestorage.app",
+            messagingSenderId: "90650745026",
+            appId: "1:90650745026:web:7c9dc54997c4970c8e035b",
+            measurementId: "G-6L3SYVWTGS"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
     </script>
 
 </body>
