@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <script>
-        // Cek apakah pengunjung sudah login
+        // Pengecekan Login
         if (sessionStorage.getItem("isLoggedIn") !== "true") {
             window.location.href = "login.html";
         }
@@ -13,16 +13,19 @@
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f4f4f4; }
         header { background: #007bff; color: white; padding: 15px; text-align: center; border-radius: 8px; }
-        .form-container { background: white; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .form-group { margin-bottom: 15px; text-align: left; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .btn-submit { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 20px; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
-        .card img { width: 100%; border-radius: 5px; }
-        .price { color: #28a745; font-weight: bold; margin: 10px 0; }
-        .btn-wa { background: #25D366; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .card img { width: 100%; height: 120px; object-fit: cover; border-radius: 5px; }
+        .price { color: #28a745; font-weight: bold; margin: 10px 0 5px 0; }
+        .stock { font-size: 13px; color: #666; margin-bottom: 10px; }
+        .btn-buy { background: #007bff; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
+
+        /* Style Pop-up Modal Pembayaran */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 8px; width: 320px; text-align: center; position: relative; }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 20px; cursor: pointer; font-weight: bold; }
+        .qris-img { width: 180px; margin: 15px 0; border: 1px solid #ddd; padding: 5px; border-radius: 5px; }
+        .btn-confirm { background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -32,92 +35,84 @@
         <p>By: Gilang ganteng</p>
     </header>
 
-    <div class="form-container">
-        <h2>Isi Data Diri Pembeli</h2>
-        <form id="formPembeli">
-            <div class="form-group">
-                <label for="nama">Nama Lengkap:</label>
-                <input type="text" id="nama" placeholder="Masukkan nama Anda" required>
-            </div>
-
-            <div class="form-group">
-                <label for="gender">Jenis Kelamin:</label>
-                <select id="gender" required>
-                    <option value="">-- Pilih Jenis Kelamin --</option>
-                    <option value="Pria">Pria</option>
-                    <option value="Wanita">Wanita</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="lokasi">Tempat Tinggal:</label>
-                <input type="text" id="lokasi" placeholder="Masukkan kota/alamat Anda" required>
-            </div>
-
-            <div class="form-group">
-                <label for="umur">Umur:</label>
-                <input type="number" id="umur" placeholder="Masukkan umur Anda" required>
-            </div>
-
-            <button type="button" class="btn-submit" onclick="kirimKeWA()">Kirim Data Diri</button>
-        </form>
-    </div>
-
     <div class="grid">
         <div class="card">
-            <img src="Produk-1.jpg" alt="Produk-1">
+            <img src="Produk-1.jpg" alt="Produk 1">
             <h3>Produk A</h3>
             <p class="price">Rp 50.000</p>
-            <a href="https://wa.me/6283137201752?text=Halo,%20saya%20mau%20beli%20Produk%20A" class="btn-wa">Beli via WA</a>
+            <p class="stock">Stok Tersedia: <b id="stok-1">10</b></p>
+            <button class="btn-buy" onclick="bukaModal('Produk A', 50000, 1)">Beli Sekarang</button>
         </div>
+
         <div class="card">
-            <img src="Produk-2.jpg" alt="Produk-2">
+            <img src="Produk-2.jpg" alt="Produk 2">
             <h3>Produk B</h3>
             <p class="price">Rp 100.000</p>
-            <a href="https://wa.me/6283137201752?text=Halo,%20saya%20mau%20beli%20Produk%20B" class="btn-wa">Beli via WA</a>
+            <p class="stock">Stok Tersedia: <b id="stok-2">5</b></p>
+            <button class="btn-buy" onclick="bukaModal('Produk B', 100000, 2)">Beli Sekarang</button>
+        </div>
+    </div>
+
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="tutupModal()">&times;</span>
+            <h3 id="modalTitle">Pembayaran</h3>
+            <p id="modalPrice" style="color:#28a745; font-weight:bold;"></p>
+            
+            <hr>
+            <p style="font-size: 14px; margin-bottom: 5px;">Scan QRIS / Transfer DANA:</p>
+            <p style="font-weight: bold; color: #118EEA; margin: 0;">DANA: 083137201752</p>
+
+            <img src="https://via.placeholder.com/180?text=Scan+QRIS" alt="Kode QRIS" class="qris-img">
+
+            <button class="btn-confirm" onclick="prosesBayar()">Saya Sudah Bayar (Chat Penjual)</button>
         </div>
     </div>
 
     <script>
-        function kirimKeWA() {
-            var nama = document.getElementById("nama").value;
-            var gender = document.getElementById("gender").value;
-            var lokasi = document.getElementById("lokasi").value;
-            var umur = document.getElementById("umur").value;
+        var produkDipilih = "";
+        var idStokDipilih = 0;
 
-            if (nama === "" || gender === "" || lokasi === "" || umur === "") {
-                alert("Harap isi semua data terlebih dahulu!");
+        // Buka Pop-up Modal
+        function bukaModal(namaProduk, harga, idStok) {
+            var elemenStok = document.getElementById("stok-" + idStok);
+            var jumlahStok = parseInt(elemenStok.innerText);
+
+            if (jumlahStok <= 0) {
+                alert("Maaf, stok produk ini sudah habis!");
                 return;
             }
 
-            var nomorWA = "6283137201752";
-            var pesan = "Halo Admin, berikut data diri saya:%0A" +
-                        "- Nama: " + encodeURIComponent(nama) + "%0A" +
-                        "- Jenis Kelamin: " + encodeURIComponent(gender) + "%0A" +
-                        "- Tempat Tinggal: " + encodeURIComponent(lokasi) + "%0A" +
-                        "- Umur: " + encodeURIComponent(umur) + " tahun";
+            produkDipilih = namaProduk;
+            idStokDipilih = idStok;
 
-            var url = "https://wa.me/" + nomorWA + "?text=" + pesan;
-            window.open(url, '_blank');
+            document.getElementById("modalTitle").innerText = "Beli " + namaProduk;
+            document.getElementById("modalPrice").innerText = "Total: Rp " + harga.toLocaleString('id-ID');
+            document.getElementById("paymentModal").style.display = "flex";
         }
-    </script>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+        // Tutup Pop-up Modal
+        function tutupModal() {
+            document.getElementById("paymentModal").style.display = "none";
+        }
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
-            authDomain: "website-611eb.firebaseapp.com",
-            projectId: "website-611eb",
-            storageBucket: "website-611eb.firebasestorage.app",
-            messagingSenderId: "90650745026",
-            appId: "1:90650745026:web:7c9dc54997c4970c8e035b",
-            measurementId: "G-6L3SYVWTGS"
-        };
+        // Konfirmasi Bayar & Kurangi Stok
+        function prosesBayar() {
+            var elemenStok = document.getElementById("stok-" + idStokDipilih);
+            var jumlahStok = parseInt(elemenStok.innerText);
 
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
+            // Kurangi stok
+            if (jumlahStok > 0) {
+                elemenStok.innerText = jumlahStok - 1;
+            }
+
+            alert("Terima kasih! Pesanan Anda untuk " + produkDipilih + " sedang diproses. Anda akan diarahkan ke Chat Penjual.");
+            tutupModal();
+
+            // Nanti di Tahap 3 ini akan mengarahkan ke halaman chat internal web
+            // Untuk sementara diarahkan ke WA dulu
+            window.location.href = "https://wa.me/6283137201752?text=Halo%20Admin,%20saya%20sudah%20bayar%20pesanan:%20" + encodeURIComponent(produkDipilih);
+        }
     </script>
 
 </body>
