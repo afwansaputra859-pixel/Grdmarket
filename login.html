@@ -1,0 +1,13 @@
+function prosesLogin() {
+    var user = document.getElementById("username").value;
+    var pass = document.getElementById("password").value;
+
+    if (user === "admin" && pass === "12345") {
+        // Simpan status bahwa user sudah login
+        sessionStorage.setItem("isLoggedIn", "true");
+        alert("Login Berhasil!");
+        window.location.href = "index.html";
+    } else {
+        alert("Username atau Password salah!");
+    }
+}
