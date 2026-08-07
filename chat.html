@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Penjual - Marketplace</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
+        header { background: #007bff; color: white; padding: 15px; text-align: center; font-weight: bold; }
+        .chat-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .message { max-width: 75%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
+        .buyer { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .seller { background: #e9ecef; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .chat-input { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; }
+        .chat-input input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
+        .chat-input button { background: #28a745; color: white; border: none; padding: 10px 15px; margin-left: 8px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <header>
+        Chat Penjual & Pembeli
+    </header>
+
+    <div class="chat-container" id="chatBox">
+        <div class="message seller">
+            <b>Admin:</b> Halo! Silakan kirimkan bukti transfer atau detail pesanan/akun game Anda di sini ya.
+        </div>
+    </div>
+
+    <div class="chat-input">
+        <input type="text" id="pesanInput" placeholder="Ketik pesan di sini...">
+        <button onclick="kirimPesan()">Kirim</button>
+    </div>
+
+    <script>
+        // Mengambil nama produk dari URL jika ada
+        const urlParams = new URLSearchParams(window.location.search);
+        const produk = urlParams.get('produk');
+
+        if (produk) {
+            const chatBox = document.getElementById("chatBox");
+            const notifPesanan = document.createElement("div");
+            notifPesanan.className = "message buyer";
+            notifPesanan.innerHTML = "<b>Sistem:</b> Pembeli melakukan pemesanan untuk <b>" + decodeURIComponent(produk) + "</b>.";
+            chatBox.appendChild(notifPesanan);
+        }
+
+        function kirimPesan() {
+            var input = document.getElementById("pesanInput");
+            var pesan = input.value.trim();
+
+            if (pesan === "") return;
+
+            var chatBox = document.getElementById("chatBox");
+            var msgDiv = document.createElement("div");
+            msgDiv.className = "message buyer";
+            msgDiv.innerText = pesan;
+
+            chatBox.appendChild(msgDiv);
+            input.value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    </script>
+
+</body>
+</html>
