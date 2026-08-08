@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Gilang</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+        header { background: #28a745; color: white; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; }
+        .room-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .room-info h4 { margin: 0 0 5px 0; color: #333; }
+        .room-info p { margin: 0; font-size: 13px; color: #666; }
+        .btn-chat { background: #007bff; color: white; text-decoration: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>Panel Chat Admin / Owner</h2>
+        <p>Daftar Pesanan & Chat Pembeli</p>
+    </header>
+
+    <div id="roomList">
+        <p style="text-align:center; color:#666;">Memuat daftar chat pembeli...</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
+            authDomain: "website-611eb.firebaseapp.com",
+            projectId: "website-611eb",
+            storageBucket: "website-611eb.firebasestorage.app",
+            messagingSenderId: "90650745026",
+            appId: "1:90650745026:web:7c9dc54997c4970c8e035b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Pastikan login sebagai Gilang
+        sessionStorage.setItem("isLoggedIn", "true");
+        sessionStorage.setItem("currentUser", "Gilang");
+
+        const roomList = document.getElementById("roomList");
+
+        // Ambil semua pesan dari Firestore
+        onSnapshot(collection(db, "chats"), (snapshot) => {
+            const rooms = {};
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.roomId) {
+                    // Kelompokkan berdasarkan roomId
+                    rooms[data.roomId] = {
+                        roomId: data.roomId,
+                        produk: data.produk || "Produk Game",
+                        lastSender: data.sender,
+                        lastText: data.text
+                    };
+                }
+            });
+
+            roomList.innerHTML = "";
+
+            const keys = Object.keys(rooms);
+            if (keys.length === 0) {
+                roomList.innerHTML = "<p style='text-align:center;'>Belum ada chat dari pembeli.</p>";
+                return;
+            }
+
+            // Tampilkan daftar room chat pembeli
+            keys.forEach((roomId) => {
+                const room = rooms[roomId];
+                const card = document.createElement("div");
+                card.className = "room-card";
+
+                card.innerHTML = `
+                    <div class="room-info">
+                        <h4>📦 ${decodeURIComponent(room.produk)}</h4>
+                        <p><b>${room.lastSender}:</b> ${room.lastText}</p>
+                    </div>
+                    <a href="chat.html?room=${encodeURIComponent(room.roomId)}&produk=${encodeURIComponent(room.produk)}" class="btn-chat">Buka Chat</a>
+                `;
+
+                roomList.appendChild(card);
+            });
+        });
+    </script>
+
+</body>
+</html>
