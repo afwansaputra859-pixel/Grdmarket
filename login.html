@@ -17,7 +17,7 @@
 <body>
 
     <div class="box">
-        <h2 id="title">Login Akun</h2>
+        <h2>Akun Marketplace</h2>
         <form id="formAuth">
             <div class="form-group">
                 <label for="username">Nama / Username:</label>
@@ -33,35 +33,34 @@
     </div>
 
     <script>
-        // Fungsi untuk pendaftaran akun baru
         function prosesDaftar() {
-            var user = document.getElementById("username").value;
-            var pass = document.getElementById("password").value;
+            var user = document.getElementById("username").value.trim();
+            var pass = document.getElementById("password").value.trim();
 
             if (user === "" || pass === "") {
                 alert("Isi Nama dan Password terlebih dahulu!");
                 return;
             }
 
-            // Simpan akun baru ke penyimpanan browser
             localStorage.setItem("user_" + user, pass);
-            alert("Pendaftaran Berhasil! Sekarang klik tombol 'Masuk (Login)'.");
+            alert("Akun '" + user + "' berhasil dibuat! Klik tombol 'Masuk (Login)'.");
         }
 
-        // Fungsi untuk login
         function prosesLogin() {
-            var user = document.getElementById("username").value;
-            var pass = document.getElementById("password").value;
+            var user = document.getElementById("username").value.trim();
+            var pass = document.getElementById("password").value.trim();
 
-            // Cek apakah akun ada di penyimpanan
             var savedPassword = localStorage.getItem("user_" + user);
 
             if (savedPassword && savedPassword === pass) {
+                // Simpan status login & simpan NAMA USER AKTIF
                 sessionStorage.setItem("isLoggedIn", "true");
+                sessionStorage.setItem("currentUser", user); 
+
                 alert("Login Berhasil! Selamat datang, " + user);
                 window.location.href = "index.html";
             } else {
-                alert("Nama atau Password belum terdaftar / salah!");
+                alert("Nama belum terdaftar atau Password salah!");
             }
         }
     </script>

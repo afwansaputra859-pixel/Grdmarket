@@ -3,31 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Penjual - Marketplace</title>
+    <title>Chat Pesanan - Marketplace</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { background: #007bff; color: white; padding: 15px; text-align: center; font-weight: bold; }
-        .chat-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .message { max-width: 75%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
-        .me { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .other { background: #e9ecef; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
-        .system { background: #fff3cd; color: #856404; align-self: center; font-size: 12px; text-align: center; width: 90%; border-radius: 5px; }
+        body { font-family: Arial, sans-serif; background: #eef2f5; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
+        header { background: #007bff; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .chat-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        
+        /* Gelembung Pesan */
+        .message-wrapper { display: flex; flex-direction: column; max-width: 75%; }
+        .message-wrapper.me { align-self: flex-end; align-items: flex-end; }
+        .message-wrapper.other { align-self: flex-start; align-items: flex-start; }
+
+        .sender-name { font-size: 11px; color: #666; margin-bottom: 3px; font-weight: bold; }
+        
+        .message { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
+        /* Pesan KITA (Kanan - Biru) */
+        .me .message { background: #007bff; color: white; border-bottom-right-radius: 2px; }
+        /* Pesan LAWAN CHAT (Kiri - Putih) */
+        .other .message { background: white; color: #333; border-bottom-left-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        
+        .system { background: #fff3cd; color: #856404; align-self: center; font-size: 12px; text-align: center; width: 90%; padding: 8px; border-radius: 6px; border: 1px solid #ffeeba; }
+        
         .chat-input { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; }
         .chat-input input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
-        .chat-input button { background: #28a745; color: white; border: none; padding: 10px 15px; margin-left: 8px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .chat-input button { background: #28a745; color: white; border: none; padding: 10px 18px; margin-left: 8px; border-radius: 5px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <header id="chatHeader">
-        Ruang Chat Penjual & Pembeli
+    <header>
+        Ruang Obrolan Transaksi
     </header>
 
-    <div class="chat-container" id="chatBox">
-        <div class="message other">
-            <b>Admin:</b> Halo! Silakan kirimkan bukti transfer atau detail pesanan di sini ya.
-        </div>
-    </div>
+    <div class="chat-container" id="chatBox"></div>
 
     <div class="chat-input">
         <input type="text" id="pesanInput" placeholder="Ketik pesan di sini...">
@@ -38,7 +46,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Konfigurasi Firebase dari akunmu
         const firebaseConfig = {
             apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
             authDomain: "website-611eb.firebaseapp.com",
@@ -51,64 +58,73 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Ambil info produk dari URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const produk = urlParams.get('produk') || 'Produk Umum';
+        // Ambil nama user yang sedang login di HP ini
+        const currentUser = sessionStorage.getItem("currentUser") || "Pengunjung";
 
-        // Tampilkan info produk di chat
+        const urlParams = new URLSearchParams(window.location.search);
+        const produk = urlParams.get('produk') || 'Produk Game';
+
         const chatBox = document.getElementById("chatBox");
+
+        // Notifikasi Sistem
         const notif = document.createElement("div");
-        notif.className = "message system";
-        notif.innerHTML = "Diskusi Pesanan: <b>" + decodeURIComponent(produk) + "</b>";
+        notif.className = "system";
+        notif.innerHTML = "Pesanan: <b>" + decodeURIComponent(produk) + "</b><br>Anda terhubung sebagai: <b>" + currentUser + "</b>";
         chatBox.appendChild(notif);
 
-        // Kumpulan pesan di Firestore berdasarkan room
         const messagesRef = collection(db, "chats");
         const q = query(messagesRef, orderBy("timestamp", "asc"));
 
-        // Dengarkan pesan masuk secara REALTIME
+        // Baca pesan secara realtime
         onSnapshot(q, (snapshot) => {
             chatBox.innerHTML = "";
-            chatBox.appendChild(notif); // Tetap tampilkan notif produk
+            chatBox.appendChild(notif);
 
             snapshot.forEach((doc) => {
                 const data = doc.data();
+                
+                const wrapper = document.createElement("div");
+                const senderTag = document.createElement("div");
                 const msgDiv = document.createElement("div");
 
-                // Cek pengirim pesan
-                const mySavedUser = sessionStorage.getItem("currentUser") || "Pengunjung";
-                if (data.sender === mySavedUser) {
-                    msgDiv.className = "message me";
-                    msgDiv.innerHTML = "<b>Kamu:</b> " + data.text;
+                senderTag.className = "sender-name";
+                msgDiv.className = "message";
+
+                // Pengecekan: Apakah pesan dikirim oleh SAYA sendiri?
+                if (data.sender === currentUser) {
+                    wrapper.className = "message-wrapper me";
+                    senderTag.innerText = "Kamu (" + data.sender + ")";
                 } else {
-                    msgDiv.className = "message other";
-                    msgDiv.innerHTML = "<b>" + data.sender + ":</b> " + data.text;
+                    wrapper.className = "message-wrapper other";
+                    senderTag.innerText = data.sender; // Nama Pembeli / Owner lain
                 }
 
-                chatBox.appendChild(msgDiv);
+                msgDiv.innerText = data.text;
+                
+                wrapper.appendChild(senderTag);
+                wrapper.appendChild(msgDiv);
+                chatBox.appendChild(wrapper);
             });
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        // Fungsi Kirim Pesan ke Firebase
+        // Kirim pesan
         async function kirimPesan() {
             const input = document.getElementById("pesanInput");
             const pesan = input.value.trim();
 
             if (pesan === "") return;
 
-            const sender = sessionStorage.getItem("currentUser") || "Pembeli";
-
             try {
                 await addDoc(messagesRef, {
                     text: pesan,
-                    sender: sender,
+                    sender: currentUser,
                     produk: produk,
                     timestamp: serverTimestamp()
                 });
                 input.value = "";
             } catch (error) {
-                console.error("Gagal mengirim pesan: ", error);
+                console.error("Gagal kirim pesan: ", error);
             }
         }
 
