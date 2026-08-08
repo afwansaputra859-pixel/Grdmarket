@@ -6,27 +6,48 @@
     <title>Dashboard Admin - Gilang</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
-        header { background: #28a745; color: white; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; }
+        header { background: #28a745; color: white; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; position: relative; }
+        
+        /* Box Login Admin */
+        .login-box { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 280px; margin: 80px auto; text-align: center; }
+        .login-box input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .login-box button { width: 100%; background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        /* Dashboard Admin */
+        #adminDashboard { display: none; }
         .room-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
         .room-info h4 { margin: 0 0 5px 0; color: #333; }
         .room-info p { margin: 0; font-size: 13px; color: #666; }
-        .btn-chat { background: #007bff; color: white; text-decoration: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; font-size: 14px; }
+        .action-btns { display: flex; gap: 8px; }
+        .btn-chat { background: #007bff; color: white; text-decoration: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; font-size: 13px; }
+        .btn-delete { background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; font-size: 13px; cursor: pointer; }
+        .btn-logout { position: absolute; right: 15px; top: 15px; background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h2>Panel Chat Admin / Owner</h2>
-        <p>Daftar Pesanan & Chat Pembeli</p>
-    </header>
+    <div id="loginSection" class="login-box">
+        <h3>🔒 Login Admin</h3>
+        <input type="text" id="adminUser" placeholder="Username Admin">
+        <input type="password" id="adminPass" placeholder="Password Admin">
+        <button onclick="loginAdmin()">Masuk Admin</button>
+    </div>
 
-    <div id="roomList">
-        <p style="text-align:center; color:#666;">Memuat daftar chat pembeli...</p>
+    <div id="adminDashboard">
+        <header>
+            <h2>Panel Admin Marketplace</h2>
+            <p>Kelola Chat & Pesanan Pembeli</p>
+            <button class="btn-logout" onclick="logoutAdmin()">Logout</button>
+        </header>
+
+        <div id="roomList">
+            <p style="text-align:center; color:#666;">Memuat daftar chat pembeli...</p>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, deleteDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
@@ -40,54 +61,101 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Pastikan login sebagai Gilang
-        sessionStorage.setItem("isLoggedIn", "true");
-        sessionStorage.setItem("currentUser", "Gilang");
+        // KREDENSIAL LOGIN ADMIN (Kamu bisa ubah di sini)
+        const ADMIN_USER_RIGHT = "Gilang";
+        const ADMIN_PASS_RIGHT = "12345"; // Ganti password admin di sini
 
-        const roomList = document.getElementById("roomList");
+        // Cek apakah admin sudah login sebelumnya
+        if (sessionStorage.getItem("isAdminLoggedIn") === "true") {
+            showDashboard();
+        }
 
-        // Ambil semua pesan dari Firestore
-        onSnapshot(collection(db, "chats"), (snapshot) => {
-            const rooms = {};
+        window.loginAdmin = function() {
+            const user = document.getElementById("adminUser").value.trim();
+            const pass = document.getElementById("adminPass").value.trim();
 
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                if (data.roomId) {
-                    // Kelompokkan berdasarkan roomId
-                    rooms[data.roomId] = {
-                        roomId: data.roomId,
-                        produk: data.produk || "Produk Game",
-                        lastSender: data.sender,
-                        lastText: data.text
-                    };
-                }
-            });
-
-            roomList.innerHTML = "";
-
-            const keys = Object.keys(rooms);
-            if (keys.length === 0) {
-                roomList.innerHTML = "<p style='text-align:center;'>Belum ada chat dari pembeli.</p>";
-                return;
+            if (user === ADMIN_USER_RIGHT && pass === ADMIN_PASS_RIGHT) {
+                sessionStorage.setItem("isAdminLoggedIn", "true");
+                sessionStorage.setItem("currentUser", "Gilang");
+                showDashboard();
+            } else {
+                alert("Username atau Password Admin salah!");
             }
+        };
 
-            // Tampilkan daftar room chat pembeli
-            keys.forEach((roomId) => {
-                const room = rooms[roomId];
-                const card = document.createElement("div");
-                card.className = "room-card";
+        window.logoutAdmin = function() {
+            sessionStorage.removeItem("isAdminLoggedIn");
+            location.reload();
+        };
 
-                card.innerHTML = `
-                    <div class="room-info">
-                        <h4>📦 ${decodeURIComponent(room.produk)}</h4>
-                        <p><b>${room.lastSender}:</b> ${room.lastText}</p>
-                    </div>
-                    <a href="chat.html?room=${encodeURIComponent(room.roomId)}&produk=${encodeURIComponent(room.produk)}" class="btn-chat">Buka Chat</a>
-                `;
+        function showDashboard() {
+            document.getElementById("loginSection").style.display = "none";
+            document.getElementById("adminDashboard").style.display = "block";
+            loadRooms();
+        }
 
-                roomList.appendChild(card);
+        function loadRooms() {
+            const roomList = document.getElementById("roomList");
+
+            onSnapshot(collection(db, "chats"), (snapshot) => {
+                const rooms = {};
+
+                snapshot.forEach((document) => {
+                    const data = document.data();
+                    if (data.roomId) {
+                        rooms[data.roomId] = {
+                            roomId: data.roomId,
+                            produk: data.produk || "Produk Game",
+                            lastSender: data.sender,
+                            lastText: data.text
+                        };
+                    }
+                });
+
+                roomList.innerHTML = "";
+                const keys = Object.keys(rooms);
+
+                if (keys.length === 0) {
+                    roomList.innerHTML = "<p style='text-align:center;'>Belum ada chat transaksi dari pembeli.</p>";
+                    return;
+                }
+
+                keys.forEach((roomId) => {
+                    const room = rooms[roomId];
+                    const card = document.createElement("div");
+                    card.className = "room-card";
+
+                    card.innerHTML = `
+                        <div class="room-info">
+                            <h4>📦 ${decodeURIComponent(room.produk)}</h4>
+                            <p><b>${room.lastSender}:</b> ${room.lastText}</p>
+                        </div>
+                        <div class="action-btns">
+                            <a href="chat.html?room=${encodeURIComponent(room.roomId)}&produk=${encodeURIComponent(room.produk)}" class="btn-chat">Buka Chat</a>
+                            <button class="btn-delete" onclick="hapusRoom('${room.roomId}')">🗑️ Hapus</button>
+                        </div>
+                    `;
+
+                    roomList.appendChild(card);
+                });
             });
-        });
+        }
+
+        // Fungsi Hapus Seluruh Room Langsung dari Admin Dashboard
+        window.hapusRoom = async function(roomId) {
+            if (confirm("Yakin ingin MENGHAPUS PERMANEN seluruh chat di room ini?")) {
+                try {
+                    const q = query(collection(db, "chats"), where("roomId", "==", roomId));
+                    const querySnapshot = await getDocs(q);
+                    querySnapshot.forEach(async (document) => {
+                        await deleteDoc(doc(db, "chats", document.id));
+                    });
+                    alert("Room chat berhasil dihapus!");
+                } catch (error) {
+                    alert("Gagal menghapus room!");
+                }
+            }
+        };
     </script>
 
 </body>

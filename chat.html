@@ -6,20 +6,28 @@
     <title>Private Chat Transaksi</title>
     <style>
         body { font-family: Arial, sans-serif; background: #eef2f5; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { background: #007bff; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 16px; }
+        header { background: #007bff; color: white; padding: 12px 15px; text-align: center; font-weight: bold; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .btn-delete-all { background: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
+        
         .chat-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
         
-        .message-wrapper { display: flex; flex-direction: column; max-width: 75%; }
+        .message-wrapper { display: flex; flex-direction: column; max-width: 80%; position: relative; }
         .message-wrapper.me { align-self: flex-end; align-items: flex-end; }
         .message-wrapper.other { align-self: flex-start; align-items: flex-start; }
 
         .sender-name { font-size: 11px; color: #666; margin-bottom: 3px; font-weight: bold; display: flex; align-items: center; gap: 4px; }
         .badge-owner { background: #28a745; color: white; font-size: 9px; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; }
 
+        .message-box { display: flex; align-items: center; gap: 5px; }
+        .me .message-box { flex-direction: row-reverse; }
+
         .message { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
         .me .message { background: #007bff; color: white; border-bottom-right-radius: 2px; }
         .other .message { background: white; color: #333; border-bottom-left-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         
+        .btn-delete-msg { background: none; border: none; color: #dc3545; font-size: 12px; cursor: pointer; opacity: 0.6; padding: 2px 5px; }
+        .btn-delete-msg:hover { opacity: 1; }
+
         .system { background: #fff3cd; color: #856404; align-self: center; font-size: 12px; text-align: center; width: 90%; padding: 8px; border-radius: 6px; border: 1px solid #ffeeba; }
         
         .chat-input { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; }
@@ -30,7 +38,8 @@
 <body>
 
     <header>
-        Private Chat Transaksi
+        <span>Private Chat Transaksi</span>
+        <button id="btnDeleteRoom" class="btn-delete-all" style="display:none;" onclick="hapusSemuaChatRoom()">🗑️ Hapus Room ini</button>
     </header>
 
     <div class="chat-container" id="chatBox"></div>
@@ -42,7 +51,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
@@ -57,11 +66,19 @@
         const db = getFirestore(app);
 
         const OWNER_NAME = "Gilang"; 
-        const currentUser = sessionStorage.getItem("currentUser") || "Pengunjung";
+        
+        // Cek apakah user sedang dalam sesi ADMIN
+        const isAdminMode = sessionStorage.getItem("isAdminLoggedIn") === "true";
+        const currentUser = isAdminMode ? OWNER_NAME : (sessionStorage.getItem("currentUser") || "Pengunjung");
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomId = urlParams.get('room') || 'general_room';
         const produk = urlParams.get('produk') || 'Produk Game';
+
+        // Hanya tampilkan tombol hapus room jika MASUK DARI SESSION ADMIN
+        if (isAdminMode) {
+            document.getElementById("btnDeleteRoom").style.display = "block";
+        }
 
         const chatBox = document.getElementById("chatBox");
 
@@ -71,8 +88,6 @@
         chatBox.appendChild(notif);
 
         const messagesRef = collection(db, "chats");
-        
-        // Ambil pesan khusus room ini
         const q = query(messagesRef, where("roomId", "==", roomId));
 
         onSnapshot(q, (snapshot) => {
@@ -80,19 +95,20 @@
             chatBox.appendChild(notif);
 
             let messages = [];
-            snapshot.forEach((doc) => {
-                messages.push(doc.data());
+            snapshot.forEach((document) => {
+                messages.push({ id: document.id, ...document.data() });
             });
 
-            // Urutkan pesan berdasarkan waktu kirim secara manual
             messages.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
 
             messages.forEach((data) => {
                 const wrapper = document.createElement("div");
                 const senderTag = document.createElement("div");
+                const msgBox = document.createElement("div");
                 const msgDiv = document.createElement("div");
 
                 senderTag.className = "sender-name";
+                msgBox.className = "message-box";
                 msgDiv.className = "message";
 
                 let ownerBadge = "";
@@ -109,9 +125,20 @@
                 }
 
                 msgDiv.innerText = data.text;
-                
+                msgBox.appendChild(msgDiv);
+
+                // Tombol Hapus Satuan HANYA MUNCUL jika dalam SESSION ADMIN
+                if (isAdminMode) {
+                    const btnDelete = document.createElement("button");
+                    btnDelete.className = "btn-delete-msg";
+                    btnDelete.innerHTML = "🗑️";
+                    btnDelete.title = "Hapus pesan ini";
+                    btnDelete.onclick = () => hapusPesan(data.id);
+                    msgBox.appendChild(btnDelete);
+                }
+
                 wrapper.appendChild(senderTag);
-                wrapper.appendChild(msgDiv);
+                wrapper.appendChild(msgBox);
                 chatBox.appendChild(wrapper);
             });
             chatBox.scrollTop = chatBox.scrollHeight;
@@ -133,10 +160,33 @@
                 });
                 input.value = "";
             } catch (error) {
-                alert("Gagal kirim pesan. Cek koneksi atau rules Firebase kamu!");
-                console.error("Error: ", error);
+                console.error("Gagal kirim pesan: ", error);
             }
         }
+
+        window.hapusPesan = async function(docId) {
+            if (confirm("Apakah Anda yakin ingin menghapus pesan ini?")) {
+                try {
+                    await deleteDoc(doc(db, "chats", docId));
+                } catch (error) {
+                    alert("Gagal menghapus pesan!");
+                }
+            }
+        };
+
+        window.hapusSemuaChatRoom = async function() {
+            if (confirm("Yakin ingin MENGHAPUS SEMUA CHAT di room transaksi ini?")) {
+                try {
+                    const querySnapshot = await getDocs(q);
+                    querySnapshot.forEach(async (document) => {
+                        await deleteDoc(doc(db, "chats", document.id));
+                    });
+                    alert("Semua chat di room ini berhasil dibersihkan!");
+                } catch (error) {
+                    alert("Gagal membersihkan room chat!");
+                }
+            }
+        };
 
         document.getElementById("btnKirim").addEventListener("click", kirimPesan);
         document.getElementById("pesanInput").addEventListener("keypress", (e) => {
