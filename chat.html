@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Pesanan - Marketplace</title>
+    <title>Private Chat Transaksi</title>
     <style>
         body { font-family: Arial, sans-serif; background: #eef2f5; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
         header { background: #007bff; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .chat-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
         
-        /* Gelembung Pesan */
         .message-wrapper { display: flex; flex-direction: column; max-width: 75%; }
         .message-wrapper.me { align-self: flex-end; align-items: flex-end; }
         .message-wrapper.other { align-self: flex-start; align-items: flex-start; }
 
-        .sender-name { font-size: 11px; color: #666; margin-bottom: 3px; font-weight: bold; }
+        .sender-name { font-size: 11px; color: #666; margin-bottom: 3px; font-weight: bold; display: flex; align-items: center; gap: 4px; }
         
+        /* Badge Penjual/Owner */
+        .badge-owner { background: #28a745; color: white; font-size: 9px; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; }
+
         .message { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
-        /* Pesan KITA (Kanan - Biru) */
         .me .message { background: #007bff; color: white; border-bottom-right-radius: 2px; }
-        /* Pesan LAWAN CHAT (Kiri - Putih) */
         .other .message { background: white; color: #333; border-bottom-left-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         
         .system { background: #fff3cd; color: #856404; align-self: center; font-size: 12px; text-align: center; width: 90%; padding: 8px; border-radius: 6px; border: 1px solid #ffeeba; }
@@ -32,7 +32,7 @@
 <body>
 
     <header>
-        Ruang Obrolan Transaksi
+        Private Chat Transaksi
     </header>
 
     <div class="chat-container" id="chatBox"></div>
@@ -44,7 +44,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
@@ -58,24 +58,27 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Ambil nama user yang sedang login di HP ini
+        // NAMA KAMU SEBAGAI OWNER/PENJUAL DI SINI:
+        const OWNER_NAME = "Gilang"; 
+
         const currentUser = sessionStorage.getItem("currentUser") || "Pengunjung";
 
         const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('room') || 'general_room';
         const produk = urlParams.get('produk') || 'Produk Game';
 
         const chatBox = document.getElementById("chatBox");
 
-        // Notifikasi Sistem
         const notif = document.createElement("div");
         notif.className = "system";
-        notif.innerHTML = "Pesanan: <b>" + decodeURIComponent(produk) + "</b><br>Anda terhubung sebagai: <b>" + currentUser + "</b>";
+        notif.innerHTML = "🔒 <b>Private Order Room</b><br>Produk: <b>" + decodeURIComponent(produk) + "</b><br>Anda: <b>" + currentUser + "</b>";
         chatBox.appendChild(notif);
 
         const messagesRef = collection(db, "chats");
-        const q = query(messagesRef, orderBy("timestamp", "asc"));
+        
+        // FILTER: Hanya ambil pesan dari ROOM ID transaksi ini saja (PRIVATE)
+        const q = query(messagesRef, where("roomId", "==", roomId), orderBy("timestamp", "asc"));
 
-        // Baca pesan secara realtime
         onSnapshot(q, (snapshot) => {
             chatBox.innerHTML = "";
             chatBox.appendChild(notif);
@@ -90,13 +93,18 @@
                 senderTag.className = "sender-name";
                 msgDiv.className = "message";
 
-                // Pengecekan: Apakah pesan dikirim oleh SAYA sendiri?
+                // Cek apakah pengirim adalah OWNER / PENJUAL
+                let ownerBadge = "";
+                if (data.sender === OWNER_NAME) {
+                    ownerBadge = `<span class="badge-owner">PENJUAL</span>`;
+                }
+
                 if (data.sender === currentUser) {
                     wrapper.className = "message-wrapper me";
-                    senderTag.innerText = "Kamu (" + data.sender + ")";
+                    senderTag.innerHTML = "Kamu (" + data.sender + ") " + ownerBadge;
                 } else {
                     wrapper.className = "message-wrapper other";
-                    senderTag.innerText = data.sender; // Nama Pembeli / Owner lain
+                    senderTag.innerHTML = data.sender + " " + ownerBadge;
                 }
 
                 msgDiv.innerText = data.text;
@@ -108,7 +116,6 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        // Kirim pesan
         async function kirimPesan() {
             const input = document.getElementById("pesanInput");
             const pesan = input.value.trim();
@@ -117,6 +124,7 @@
 
             try {
                 await addDoc(messagesRef, {
+                    roomId: roomId,
                     text: pesan,
                     sender: currentUser,
                     produk: produk,

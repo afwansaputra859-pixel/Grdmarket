@@ -43,7 +43,7 @@
             }
 
             localStorage.setItem("user_" + user, pass);
-            alert("Akun '" + user + "' berhasil dibuat! Klik tombol 'Masuk (Login)'.");
+            alert("Akun '" + user + "' berhasil dibuat! Klik 'Masuk (Login)'.");
         }
 
         function prosesLogin() {
@@ -53,7 +53,6 @@
             var savedPassword = localStorage.getItem("user_" + user);
 
             if (savedPassword && savedPassword === pass) {
-                // Simpan status login & simpan NAMA USER AKTIF
                 sessionStorage.setItem("isLoggedIn", "true");
                 sessionStorage.setItem("currentUser", user); 
 

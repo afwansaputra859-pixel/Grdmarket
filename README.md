@@ -2,7 +2,6 @@
 <html lang="id">
 <head>
     <script>
-        // Pengecekan Login: Jika belum login, paksa ke login.html
         if (sessionStorage.getItem("isLoggedIn") !== "true") {
             window.location.href = "login.html";
         }
@@ -20,7 +19,6 @@
         .stock { font-size: 13px; color: #666; margin-bottom: 10px; }
         .btn-buy { background: #007bff; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
 
-        /* Style Pop-up Modal Pembayaran */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 20px; border-radius: 8px; width: 320px; text-align: center; position: relative; }
         .close-btn { position: absolute; top: 10px; right: 15px; font-size: 20px; cursor: pointer; font-weight: bold; }
@@ -73,7 +71,6 @@
         var produkDipilih = "";
         var idStokDipilih = 0;
 
-        // Buka Pop-up Modal
         function bukaModal(namaProduk, harga, idStok) {
             var elemenStok = document.getElementById("stok-" + idStok);
             var jumlahStok = parseInt(elemenStok.innerText);
@@ -91,12 +88,10 @@
             document.getElementById("paymentModal").style.display = "flex";
         }
 
-        // Tutup Pop-up Modal
         function tutupModal() {
             document.getElementById("paymentModal").style.display = "none";
         }
 
-        // Konfirmasi Bayar, Kurangi Stok, dan Langsung Masuk ke Chat
         function prosesBayar() {
             var elemenStok = document.getElementById("stok-" + idStokDipilih);
             var jumlahStok = parseInt(elemenStok.innerText);
@@ -105,30 +100,16 @@
                 elemenStok.innerText = jumlahStok - 1;
             }
 
-            alert("Terima kasih! Pesanan diproses. Mengarahkan ke Chat Penjual...");
+            var userPembeli = sessionStorage.getItem("currentUser") || "User";
+            // Buat ID Room unik berdasarkan waktu & nama pembeli
+            var roomId = "order_" + userPembeli + "_" + Date.now();
+
+            alert("Terima kasih! Pesanan diproses. Mengarahkan ke Chat Private Penjual...");
             tutupModal();
 
-            // Pindah langsung ke chat.html membawa info produk
-            window.location.href = "chat.html?produk=" + encodeURIComponent(produkDipilih);
+            // Pindah ke room chat private
+            window.location.href = "chat.html?room=" + encodeURIComponent(roomId) + "&produk=" + encodeURIComponent(produkDipilih);
         }
-    </script>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
-            authDomain: "website-611eb.firebaseapp.com",
-            projectId: "website-611eb",
-            storageBucket: "website-611eb.firebasestorage.app",
-            messagingSenderId: "90650745026",
-            appId: "1:90650745026:web:7c9dc54997c4970c8e035b",
-            measurementId: "G-6L3SYVWTGS"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
     </script>
 
 </body>
