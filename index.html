@@ -39,15 +39,15 @@
             <h3>Produk A</h3>
             <p class="price">Rp 50.000</p>
             <p class="stock">Stok Tersedia: <b id="stok-1">10</b></p>
-            <button class="btn-buy" onclick="bukaModal('Produk A', 50000, 1)">Beli Sekarang</button>
+            <button class="btn-buy" onclick="bukaModal('Produk A', 50000, 1)">Beli / Chat Penjual</button>
         </div>
 
         <div class="card">
-            <img src="Produk-2.jpg" alt="Produk 2">
+            <img src="Produk-2.jpg" alt="Produk B">
             <h3>Produk B</h3>
             <p class="price">Rp 100.000</p>
             <p class="stock">Stok Tersedia: <b id="stok-2">5</b></p>
-            <button class="btn-buy" onclick="bukaModal('Produk B', 100000, 2)">Beli Sekarang</button>
+            <button class="btn-buy" onclick="bukaModal('Produk B', 100000, 2)">Beli / Chat Penjual</button>
         </div>
     </div>
 
@@ -63,7 +63,7 @@
 
             <img src="https://via.placeholder.com/180?text=Scan+QRIS" alt="Kode QRIS" class="qris-img">
 
-            <button class="btn-confirm" onclick="prosesBayar()">Saya Sudah Bayar (Chat Penjual)</button>
+            <button class="btn-confirm" onclick="prosesBayar()">Lanjut ke Private Chat</button>
         </div>
     </div>
 
@@ -72,6 +72,17 @@
         var idStokDipilih = 0;
 
         function bukaModal(namaProduk, harga, idStok) {
+            var userPembeli = sessionStorage.getItem("currentUser") || "User";
+            // KODE ROOM KONSISTEN: NamaPembeli_NamaProduk (Biar chat lama selalu terbuka lagi)
+            var cleanProduk = namaProduk.replace(/\s+/g, '');
+            var roomId = "order_" + userPembeli + "_" + cleanProduk;
+
+            // Jika user pernah transaksi/chat produk ini sebelumnya, langsung masuk ke chat tanpa kurangi stok lagi!
+            if (localStorage.getItem("hasOrder_" + roomId)) {
+                window.location.href = "chat.html?room=" + encodeURIComponent(roomId) + "&produk=" + encodeURIComponent(namaProduk);
+                return;
+            }
+
             var elemenStok = document.getElementById("stok-" + idStok);
             var jumlahStok = parseInt(elemenStok.innerText);
 
@@ -93,21 +104,22 @@
         }
 
         function prosesBayar() {
-            var elemenStok = document.getElementById("stok-" + idStokDipilih);
-            var jumlahStok = parseInt(elemenStok.innerText);
+            var userPembeli = sessionStorage.getItem("currentUser") || "User";
+            var cleanProduk = produkDipilih.replace(/\s+/g, '');
+            var roomId = "order_" + userPembeli + "_" + cleanProduk;
 
-            if (jumlahStok > 0) {
-                elemenStok.innerText = jumlahStok - 1;
+            // Kurangi stok HANYA saat transaksi pertama kali dibuat
+            if (!localStorage.getItem("hasOrder_" + roomId)) {
+                var elemenStok = document.getElementById("stok-" + idStokDipilih);
+                var jumlahStok = parseInt(elemenStok.innerText);
+                if (jumlahStok > 0) {
+                    elemenStok.innerText = jumlahStok - 1;
+                }
+                // Tanda bahwa user sudah punya room aktif untuk produk ini
+                localStorage.setItem("hasOrder_" + roomId, "true");
             }
 
-            var userPembeli = sessionStorage.getItem("currentUser") || "User";
-            // Buat ID Room unik berdasarkan waktu & nama pembeli
-            var roomId = "order_" + userPembeli + "_" + Date.now();
-
-            alert("Terima kasih! Pesanan diproses. Mengarahkan ke Chat Private Penjual...");
             tutupModal();
-
-            // Pindah ke room chat private
             window.location.href = "chat.html?room=" + encodeURIComponent(roomId) + "&produk=" + encodeURIComponent(produkDipilih);
         }
     </script>
