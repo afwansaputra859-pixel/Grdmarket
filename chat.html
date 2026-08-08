@@ -9,8 +9,9 @@
         header { background: #007bff; color: white; padding: 15px; text-align: center; font-weight: bold; }
         .chat-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .message { max-width: 75%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
-        .buyer { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .seller { background: #e9ecef; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .me { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .other { background: #e9ecef; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .system { background: #fff3cd; color: #856404; align-self: center; font-size: 12px; text-align: center; width: 90%; border-radius: 5px; }
         .chat-input { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; }
         .chat-input input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
         .chat-input button { background: #28a745; color: white; border: none; padding: 10px 15px; margin-left: 8px; border-radius: 5px; font-weight: bold; cursor: pointer; }
@@ -18,49 +19,103 @@
 </head>
 <body>
 
-    <header>
-        Chat Penjual & Pembeli
+    <header id="chatHeader">
+        Ruang Chat Penjual & Pembeli
     </header>
 
     <div class="chat-container" id="chatBox">
-        <div class="message seller">
-            <b>Admin:</b> Halo! Silakan kirimkan bukti transfer atau detail pesanan/akun game Anda di sini ya.
+        <div class="message other">
+            <b>Admin:</b> Halo! Silakan kirimkan bukti transfer atau detail pesanan di sini ya.
         </div>
     </div>
 
     <div class="chat-input">
         <input type="text" id="pesanInput" placeholder="Ketik pesan di sini...">
-        <button onclick="kirimPesan()">Kirim</button>
+        <button id="btnKirim">Kirim</button>
     </div>
 
-    <script>
-        // Mengambil nama produk dari URL jika ada
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Konfigurasi Firebase dari akunmu
+        const firebaseConfig = {
+            apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
+            authDomain: "website-611eb.firebaseapp.com",
+            projectId: "website-611eb",
+            storageBucket: "website-611eb.firebasestorage.app",
+            messagingSenderId: "90650745026",
+            appId: "1:90650745026:web:7c9dc54997c4970c8e035b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Ambil info produk dari URL
         const urlParams = new URLSearchParams(window.location.search);
-        const produk = urlParams.get('produk');
+        const produk = urlParams.get('produk') || 'Produk Umum';
 
-        if (produk) {
-            const chatBox = document.getElementById("chatBox");
-            const notifPesanan = document.createElement("div");
-            notifPesanan.className = "message buyer";
-            notifPesanan.innerHTML = "<b>Sistem:</b> Pembeli melakukan pemesanan untuk <b>" + decodeURIComponent(produk) + "</b>.";
-            chatBox.appendChild(notifPesanan);
-        }
+        // Tampilkan info produk di chat
+        const chatBox = document.getElementById("chatBox");
+        const notif = document.createElement("div");
+        notif.className = "message system";
+        notif.innerHTML = "Diskusi Pesanan: <b>" + decodeURIComponent(produk) + "</b>";
+        chatBox.appendChild(notif);
 
-        function kirimPesan() {
-            var input = document.getElementById("pesanInput");
-            var pesan = input.value.trim();
+        // Kumpulan pesan di Firestore berdasarkan room
+        const messagesRef = collection(db, "chats");
+        const q = query(messagesRef, orderBy("timestamp", "asc"));
+
+        // Dengarkan pesan masuk secara REALTIME
+        onSnapshot(q, (snapshot) => {
+            chatBox.innerHTML = "";
+            chatBox.appendChild(notif); // Tetap tampilkan notif produk
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const msgDiv = document.createElement("div");
+
+                // Cek pengirim pesan
+                const mySavedUser = sessionStorage.getItem("currentUser") || "Pengunjung";
+                if (data.sender === mySavedUser) {
+                    msgDiv.className = "message me";
+                    msgDiv.innerHTML = "<b>Kamu:</b> " + data.text;
+                } else {
+                    msgDiv.className = "message other";
+                    msgDiv.innerHTML = "<b>" + data.sender + ":</b> " + data.text;
+                }
+
+                chatBox.appendChild(msgDiv);
+            });
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+
+        // Fungsi Kirim Pesan ke Firebase
+        async function kirimPesan() {
+            const input = document.getElementById("pesanInput");
+            const pesan = input.value.trim();
 
             if (pesan === "") return;
 
-            var chatBox = document.getElementById("chatBox");
-            var msgDiv = document.createElement("div");
-            msgDiv.className = "message buyer";
-            msgDiv.innerText = pesan;
+            const sender = sessionStorage.getItem("currentUser") || "Pembeli";
 
-            chatBox.appendChild(msgDiv);
-            input.value = "";
-            chatBox.scrollTop = chatBox.scrollHeight;
+            try {
+                await addDoc(messagesRef, {
+                    text: pesan,
+                    sender: sender,
+                    produk: produk,
+                    timestamp: serverTimestamp()
+                });
+                input.value = "";
+            } catch (error) {
+                console.error("Gagal mengirim pesan: ", error);
+            }
         }
+
+        document.getElementById("btnKirim").addEventListener("click", kirimPesan);
+        document.getElementById("pesanInput").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") kirimPesan();
+        });
     </script>
 
 </body>
