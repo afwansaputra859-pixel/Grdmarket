@@ -7,13 +7,15 @@
     <style>
         body { font-family: Arial, sans-serif; background: #eef2f5; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
         
-        /* Header dengan Tombol Kembali ke Toko */
-        header { background: #007bff; color: white; padding: 12px 15px; text-align: center; font-weight: bold; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
+        header { background: #007bff; color: white; padding: 10px 15px; text-align: center; font-weight: bold; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
         header a { color: white; text-decoration: none; font-size: 13px; background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 4px; }
         header a:hover { background: rgba(255,255,255,0.3); }
 
         .btn-delete-all { background: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
         
+        /* Tombol Notifikasi untuk Pembeli */
+        .notif-bar { background: #e7f3ff; color: #007bff; padding: 6px 10px; text-align: center; font-size: 11px; font-weight: bold; cursor: pointer; border-bottom: 1px solid #b2d7ff; }
+
         .chat-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
         
         .message-wrapper { display: flex; flex-direction: column; max-width: 80%; position: relative; }
@@ -42,7 +44,7 @@
         .btn-upload { background: #6c757d; color: white; border: none; padding: 10px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; }
         .btn-kirim { background: #28a745; color: white; border: none; padding: 10px 18px; border-radius: 5px; font-weight: bold; cursor: pointer; }
 
-        /* POP-UP PREVIEW FOTO SEBELUM KIRIM */
+        /* MODAL PREVIEW FOTO */
         .preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); justify-content: center; align-items: center; z-index: 1000; }
         .preview-content { background: white; padding: 15px; border-radius: 10px; width: 280px; text-align: center; }
         .preview-content img { max-width: 100%; max-height: 250px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 15px; }
@@ -50,7 +52,7 @@
         .btn-confirm-send { flex: 1; background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; }
         .btn-cancel-send { flex: 1; background: #dc3545; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; }
 
-        /* POP-UP ZOOM FOTO (ANTI ABOUT:BLANK) */
+        /* MODAL ZOOM FOTO */
         .zoom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 2000; flex-direction: column; }
         .zoom-modal img { max-width: 90%; max-height: 80vh; border-radius: 8px; box-shadow: 0 0 10px rgba(255,255,255,0.2); }
         .btn-close-zoom { margin-top: 15px; background: #dc3545; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 14px; }
@@ -63,6 +65,10 @@
         <span>Private Chat Transaksi</span>
         <button id="btnDeleteRoom" class="btn-delete-all" style="display:none;" onclick="hapusSemuaChatRoom()">🗑️ Hapus Room</button>
     </header>
+
+    <div id="notifBar" class="notif-bar" onclick="aktifkanNotifPembeli()">
+        🔔 Klik di sini untuk mengaktifkan notifikasi suara balasan penjual!
+    </div>
 
     <div class="chat-container" id="chatBox"></div>
 
@@ -88,6 +94,8 @@
         <img id="imgZoomTarget" src="" alt="Zoom Foto">
         <button class="btn-close-zoom" onclick="tutupZoomFoto()">❌ Tutup Foto</button>
     </div>
+
+    <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -116,6 +124,7 @@
 
         if (isAdminMode) {
             document.getElementById("btnDeleteRoom").style.display = "block";
+            document.getElementById("notifBar").style.display = "none"; // Sembunyikan bar di mode admin
         }
 
         const chatBox = document.getElementById("chatBox");
@@ -128,7 +137,52 @@
         const messagesRef = collection(db, "chats");
         const q = query(messagesRef, where("roomId", "==", roomId));
 
+        // MINTA IZIN NOTIFIKASI BROWSER DARI PEMBELI
+        window.aktifkanNotifPembeli = function() {
+            if ("Notification" in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        alert("Notifikasi aktif! Kamu akan mendengar bunyi saat Penjual membalas.");
+                        document.getElementById("notifBar").style.display = "none";
+                    }
+                });
+            }
+        };
+
+        // Cek jika izin sudah pernah diberikan sebelumnya
+        if ("Notification" in window && Notification.permission === "granted") {
+            document.getElementById("notifBar").style.display = "none";
+        }
+
+        let isFirstLoad = true;
+
         onSnapshot(q, (snapshot) => {
+            let hasNewOtherMsg = false;
+
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === "added" && !isFirstLoad) {
+                    const newMsg = change.doc.data();
+                    // Jika pesan baru datang dari ORANG LAIN (bukan dari diri sendiri)
+                    if (newMsg.sender !== currentUser) {
+                        hasNewOtherMsg = true;
+
+                        if ("Notification" in window && Notification.permission === "granted") {
+                            new Notification("💬 Balasan dari " + newMsg.sender, {
+                                body: newMsg.text || "Mengirimkan gambar/bukti.",
+                                icon: "https://cdn-icons-png.flaticon.com/512/732/732200.png"
+                            });
+                        }
+                    }
+                }
+            });
+
+            if (hasNewOtherMsg) {
+                const audio = document.getElementById("notifSound");
+                if (audio) audio.play();
+            }
+
+            isFirstLoad = false;
+
             chatBox.innerHTML = "";
             chatBox.appendChild(notif);
 
@@ -222,7 +276,7 @@
             }
         }
 
-        // PREVIEW FOTO + KOMPRESI CANVAS OTOMATIS
+        // PREVIEW FOTO + KOMPRESI CANVAS
         let base64ResultTemp = null;
 
         document.getElementById("imageInput").addEventListener("change", function(e) {
@@ -275,7 +329,7 @@
             batalKirimFoto();
         };
 
-        // ZOOM FOTO INTERNAL
+        // ZOOM FOTO
         window.bukaZoomFoto = function(urlFoto) {
             document.getElementById("imgZoomTarget").src = urlFoto;
             document.getElementById("zoomModal").style.display = "flex";
@@ -285,7 +339,7 @@
             document.getElementById("zoomModal").style.display = "none";
         };
 
-        // HAPUS PESAN & ROOM (ADMIN)
+        // HAPUS PESAN & ROOM
         window.hapusPesan = async function(docId) {
             if (confirm("Apakah Anda yakin ingin menghapus pesan ini?")) {
                 try {
