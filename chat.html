@@ -6,7 +6,7 @@
     <title>Private Chat Transaksi</title>
     <style>
         body { font-family: Arial, sans-serif; background: #eef2f5; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { background: #007bff; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        header { background: #007bff; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 16px; }
         .chat-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
         
         .message-wrapper { display: flex; flex-direction: column; max-width: 75%; }
@@ -14,8 +14,6 @@
         .message-wrapper.other { align-self: flex-start; align-items: flex-start; }
 
         .sender-name { font-size: 11px; color: #666; margin-bottom: 3px; font-weight: bold; display: flex; align-items: center; gap: 4px; }
-        
-        /* Badge Penjual/Owner */
         .badge-owner { background: #28a745; color: white; font-size: 9px; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; }
 
         .message { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
@@ -44,7 +42,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
@@ -58,9 +56,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // NAMA KAMU SEBAGAI OWNER/PENJUAL DI SINI:
         const OWNER_NAME = "Gilang"; 
-
         const currentUser = sessionStorage.getItem("currentUser") || "Pengunjung";
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -76,16 +72,22 @@
 
         const messagesRef = collection(db, "chats");
         
-        // FILTER: Hanya ambil pesan dari ROOM ID transaksi ini saja (PRIVATE)
-        const q = query(messagesRef, where("roomId", "==", roomId), orderBy("timestamp", "asc"));
+        // Ambil pesan khusus room ini
+        const q = query(messagesRef, where("roomId", "==", roomId));
 
         onSnapshot(q, (snapshot) => {
             chatBox.innerHTML = "";
             chatBox.appendChild(notif);
 
+            let messages = [];
             snapshot.forEach((doc) => {
-                const data = doc.data();
-                
+                messages.push(doc.data());
+            });
+
+            // Urutkan pesan berdasarkan waktu kirim secara manual
+            messages.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+
+            messages.forEach((data) => {
                 const wrapper = document.createElement("div");
                 const senderTag = document.createElement("div");
                 const msgDiv = document.createElement("div");
@@ -93,7 +95,6 @@
                 senderTag.className = "sender-name";
                 msgDiv.className = "message";
 
-                // Cek apakah pengirim adalah OWNER / PENJUAL
                 let ownerBadge = "";
                 if (data.sender === OWNER_NAME) {
                     ownerBadge = `<span class="badge-owner">PENJUAL</span>`;
@@ -132,7 +133,8 @@
                 });
                 input.value = "";
             } catch (error) {
-                console.error("Gagal kirim pesan: ", error);
+                alert("Gagal kirim pesan. Cek koneksi atau rules Firebase kamu!");
+                console.error("Error: ", error);
             }
         }
 
