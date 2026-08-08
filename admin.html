@@ -21,7 +21,6 @@
         .btn-delete { background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; font-size: 13px; cursor: pointer; }
         .btn-logout { position: absolute; right: 15px; top: 15px; background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
         
-        /* Tombol Izin Notifikasi */
         .btn-notif { background: #ffc107; color: #333; border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; font-size: 12px; cursor: pointer; margin-bottom: 15px; width: 100%; }
     </style>
 </head>
@@ -67,7 +66,7 @@
         const db = getFirestore(app);
 
         const ADMIN_USER_RIGHT = "Gilang";
-        const ADMIN_PASS_RIGHT = "Kolakpisang123468"; 
+        const ADMIN_PASS_RIGHT = "kolakpisang123468"; 
 
         if (sessionStorage.getItem("isAdminLoggedIn") === "true") {
             showDashboard();
@@ -94,14 +93,21 @@
         function showDashboard() {
             document.getElementById("loginSection").style.display = "none";
             document.getElementById("adminDashboard").style.display = "block";
+            
+            // Cek jika izin notifikasi sudah tersimpan
+            if ("Notification" in window && (Notification.permission === "granted" || localStorage.getItem("notifAdminEnabled") === "true")) {
+                const btn = document.getElementById("btnEnableNotif");
+                if (btn) btn.style.display = "none";
+            }
+
             loadRooms();
         }
 
-        // MINTA IZIN NOTIFIKASI BROWSER
         window.mintaIzinNotifikasi = function() {
             if ("Notification" in window) {
                 Notification.requestPermission().then(permission => {
                     if (permission === "granted") {
+                        localStorage.setItem("notifAdminEnabled", "true");
                         alert("Notifikasi Aktif! Kamu akan dapat pemberitahuan setiap ada chat masuk.");
                         document.getElementById("btnEnableNotif").style.display = "none";
                     }
@@ -109,7 +115,7 @@
             }
         };
 
-        let isFirstLoad = true; // Agar tidak bunyi saat awal buka halaman
+        let isFirstLoad = true;
 
         function loadRooms() {
             const roomList = document.getElementById("roomList");
@@ -119,13 +125,11 @@
                 let hasNewMessage = false;
 
                 snapshot.docChanges().forEach((change) => {
-                    // Cek jika ada dokumen pesan BARU ditambahkan dan pengirimnya BUKAN Gilang
                     if (change.type === "added" && !isFirstLoad) {
                         const newMsg = change.doc.data();
                         if (newMsg.sender !== ADMIN_USER_RIGHT) {
                             hasNewMessage = true;
                             
-                            // Kirim Notifikasi Spanduk HP
                             if ("Notification" in window && Notification.permission === "granted") {
                                 new Notification("📩 Chat Baru dari " + newMsg.sender, {
                                     body: newMsg.text || "Mengirimkan bukti pembayaran / foto.",
@@ -136,13 +140,12 @@
                     }
                 });
 
-                // Bunyikan Suara jika ada pesan baru
                 if (hasNewMessage) {
                     const audio = document.getElementById("notifSound");
                     if (audio) audio.play();
                 }
 
-                isFirstLoad = false; // Penanda bahwa muat awal selesai
+                isFirstLoad = false;
 
                 snapshot.forEach((document) => {
                     const data = document.data();
