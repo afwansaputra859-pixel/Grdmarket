@@ -9,7 +9,6 @@
         
         header { background: #007bff; color: white; padding: 10px 15px; text-align: center; font-weight: bold; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
         header a { color: white; text-decoration: none; font-size: 13px; background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 4px; }
-        header a:hover { background: rgba(255,255,255,0.3); }
 
         .btn-delete-all { background: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
 
@@ -30,11 +29,6 @@
         .other .message { background: white; color: #333; border-bottom-left-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         
         .msg-time { font-size: 10px; opacity: 0.75; margin-top: 4px; text-align: right; display: block; }
-        .chat-img { max-width: 100%; width: 200px; border-radius: 8px; margin-top: 5px; cursor: pointer; display: block; border: 1px solid #ddd; }
-
-        .btn-delete-msg { background: none; border: none; color: #dc3545; font-size: 12px; cursor: pointer; opacity: 0.6; padding: 2px 5px; }
-        .btn-delete-msg:hover { opacity: 1; }
-
         .system { background: #fff3cd; color: #856404; align-self: center; font-size: 12px; text-align: center; width: 90%; padding: 8px; border-radius: 6px; border: 1px solid #ffeeba; }
         
         .chat-input { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; align-items: center; gap: 6px; }
@@ -42,26 +36,10 @@
         .btn-upload { background: #6c757d; color: white; border: none; padding: 10px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; }
         .btn-kirim { background: #28a745; color: white; border: none; padding: 10px 18px; border-radius: 5px; font-weight: bold; cursor: pointer; }
 
-        /* MODAL POPUP NOTIFIKASI DI TENGAH LAYAR */
         .notif-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 3000; }
         .notif-modal-box { background: white; padding: 20px; border-radius: 12px; width: 280px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .notif-modal-box h3 { margin-top: 0; color: #333; font-size: 16px; }
-        .notif-modal-box p { font-size: 13px; color: #666; margin-bottom: 20px; line-height: 1.4; }
         .btn-allow-notif { background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; font-size: 13px; }
         .btn-deny-notif { background: transparent; color: #888; border: none; padding: 8px; margin-top: 5px; font-size: 11px; cursor: pointer; text-decoration: underline; }
-
-        /* PREVIEW FOTO */
-        .preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); justify-content: center; align-items: center; z-index: 1000; }
-        .preview-content { background: white; padding: 15px; border-radius: 10px; width: 280px; text-align: center; }
-        .preview-content img { max-width: 100%; max-height: 250px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 15px; }
-        .preview-actions { display: flex; justify-content: space-between; gap: 10px; }
-        .btn-confirm-send { flex: 1; background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        .btn-cancel-send { flex: 1; background: #dc3545; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; }
-
-        /* ZOOM FOTO */
-        .zoom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 2000; flex-direction: column; }
-        .zoom-modal img { max-width: 90%; max-height: 80vh; border-radius: 8px; box-shadow: 0 0 10px rgba(255,255,255,0.2); }
-        .btn-close-zoom { margin-top: 15px; background: #dc3545; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -74,8 +52,8 @@
 
     <div id="notifModal" class="notif-modal-overlay">
         <div class="notif-modal-box">
-            <h3>🔔 Aktifkan Notifikasi Chat</h3>
-            <p>Aktifkan notifikasi agar kamu langsung tahu saat Penjual membalas pesanmu meski sedang keluar dari web.</p>
+            <h3>🔔 Aktifkan Notifikasi Balasan</h3>
+            <p style="font-size: 13px; color: #666;">Aktifkan notifikasi agar kamu langsung tahu saat Penjual membalas pesanmu meski kamu sedang keluar dari web.</p>
             <button class="btn-allow-notif" onclick="aktifkanNotifPembeli()">Izinkan Notifikasi 🚀</button>
             <button class="btn-deny-notif" onclick="tutupNotifModal()">Nanti Saja</button>
         </div>
@@ -84,33 +62,18 @@
     <div class="chat-container" id="chatBox"></div>
 
     <div class="chat-input">
-        <label for="imageInput" class="btn-upload" title="Pilih Bukti Pembayaran">📷</label>
+        <label for="imageInput" class="btn-upload">📷</label>
         <input type="file" id="imageInput" accept="image/*" style="display:none;">
-        <input type="text" id="pesanInput" placeholder="Ketik pesan / upload bukti...">
+        <input type="text" id="pesanInput" placeholder="Ketik pesan...">
         <button id="btnKirim" class="btn-kirim">Kirim</button>
-    </div>
-
-    <div id="previewModal" class="preview-modal">
-        <div class="preview-content">
-            <h4 style="margin-top:0; color:#333;">Konfirmasi Kirim Foto</h4>
-            <img id="imgPreviewTarget" src="" alt="Pratinjau Foto">
-            <div class="preview-actions">
-                <button class="btn-cancel-send" onclick="batalKirimFoto()">❌ Batal</button>
-                <button class="btn-confirm-send" id="btnConfirmSend" onclick="prosesUploadFoto()">🚀 Kirim Foto</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="zoomModal" class="zoom-modal" onclick="tutupZoomFoto()">
-        <img id="imgZoomTarget" src="" alt="Zoom Foto">
-        <button class="btn-close-zoom" onclick="tutupZoomFoto()">❌ Tutup Foto</button>
     </div>
 
     <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, where, getDocs, serverTimestamp, enableNetwork } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
@@ -123,10 +86,20 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const messaging = getMessaging(app);
 
-        // SERVICE WORKER UNTUK SEMUA BROWSER / CHROME
+        // ====================================================
+        // 🔑 MASUKKAN VAPID KEY YANG SAMA DENGAN ADMIN.HTML DI SINI:
+        // ====================================================
+        const MY_VAPID_KEY = "PASTE_VAPID_KEY_FIREBASE_KAMU_DI_SINI";
+
+        // DAFTARKAN SERVICE WORKER UNTUK PEMBELI
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(e => console.log(e));
+            navigator.serviceWorker.register('/firebase-messaging-sw.js')
+            .then((registration) => {
+                console.log('Service Worker Pembeli Terdaftar:', registration);
+            })
+            .catch((err) => console.log('SW Registration error:', err));
         }
 
         const OWNER_NAME = "Gilang"; 
@@ -137,28 +110,48 @@
         const roomId = urlParams.get('room') || 'general_room';
         const produk = urlParams.get('produk') || 'Produk Game';
 
-        const notifModal = document.getElementById("notifModal");
+        const audio = document.getElementById("notifSound");
 
-        if (isAdminMode) {
-            document.getElementById("btnDeleteRoom").style.display = "block";
-        } else {
-            // TANYA CUMA 1 KALI: Jika belum pernah diklik samasekali
+        // UNLOCK AUDIO BROWSER CHROME DI INTERAKSI PERTAMA
+        document.addEventListener("click", () => {
+            if (audio) {
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }).catch(() => {});
+            }
+        }, { once: true });
+
+        // AUTO-RECONNECT FIREBASE SAAT DIBUKA ULANG DI CHROME
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                enableNetwork(db);
+            }
+        });
+
+        const notifModal = document.getElementById("notifModal");
+        if (!isAdminMode) {
             if (localStorage.getItem("notifPromptAnswered") !== "true" && "Notification" in window && Notification.permission !== "granted") {
                 notifModal.style.display = "flex";
+            } else {
+                requestFCMToken();
             }
+        } else {
+            document.getElementById("btnDeleteRoom").style.display = "block";
         }
 
         window.tutupNotifModal = function() {
-            localStorage.setItem("notifPromptAnswered", "true"); // Tandai agar tidak muncul lagi
+            localStorage.setItem("notifPromptAnswered", "true");
             notifModal.style.display = "none";
         };
 
         window.aktifkanNotifPembeli = function() {
-            localStorage.setItem("notifPromptAnswered", "true"); // Tandai agar tidak muncul lagi
+            localStorage.setItem("notifPromptAnswered", "true");
             if ("Notification" in window) {
-                Notification.requestPermission().then(permission => {
+                Notification.requestPermission().then((permission) => {
                     if (permission === "granted") {
                         alert("Notifikasi Aktif! Kamu akan dapat pemberitahuan jika Penjual membalas.");
+                        requestFCMToken();
                     }
                     notifModal.style.display = "none";
                 });
@@ -167,26 +160,41 @@
             }
         };
 
-        const chatBox = document.getElementById("chatBox");
+        // FUNGSI MEMINTA TOKEN FCM PERANGKAT PEMBELI
+        function requestFCMToken() {
+            if (MY_VAPID_KEY === "BD63RP-z3O9xIrJfLlt5zBhiIWbCgsV7wGhOAxu7QapPyDk6KIZfmleOUPnm-vl6hqaFjmAS1Gk66r9e2spDUp4") {
+                console.log("VAPID Key belum diganti di chat.html!");
+                return;
+            }
 
+            getToken(messaging, { vapidKey: MY_VAPID_KEY }).then((currentToken) => {
+                if (currentToken) {
+                    console.log("Token FCM Pembeli:", currentToken);
+                } else {
+                    console.log("Izin tidak diberikan untuk token.");
+                }
+            }).catch((err) => {
+                console.log("An error occurred while retrieving token. ", err);
+            });
+        }
+
+        // MENANGANI NOTIFIKASI SAAT CHAT SEDANG DIBUKA
+        onMessage(messaging, (payload) => {
+            console.log('Pesan FCM Diterima Pembeli: ', payload);
+            if (audio) audio.play();
+        });
+
+        const chatBox = document.getElementById("chatBox");
         const notif = document.createElement("div");
         notif.className = "system";
-        notif.innerHTML = "🔒 <b>Private Order Room</b><br>Produk: <b>" + decodeURIComponent(produk) + "</b><br>Anda: <b>" + currentUser + "</b><br><i>Silakan kirim bukti pembayaran berupa foto di bawah.</i>";
+        notif.innerHTML = "🔒 <b>Private Order Room</b><br>Produk: <b>" + decodeURIComponent(produk) + "</b><br>Anda: <b>" + currentUser + "</b>";
         chatBox.appendChild(notif);
 
         const messagesRef = collection(db, "chats");
         const q = query(messagesRef, where("roomId", "==", roomId));
 
         function formatWaktu(timestamp) {
-            let date;
-            if (timestamp && timestamp.toDate) {
-                date = timestamp.toDate();
-            } else if (timestamp && timestamp.seconds) {
-                date = new Date(timestamp.seconds * 1000);
-            } else {
-                date = new Date();
-            }
-
+            let date = (timestamp && timestamp.toDate) ? timestamp.toDate() : new Date();
             let jam = date.getHours().toString().padStart(2, '0');
             let menit = date.getMinutes().toString().padStart(2, '0');
             return jam + ":" + menit;
@@ -202,10 +210,9 @@
                     const newMsg = change.doc.data();
                     if (newMsg.sender !== currentUser) {
                         hasNewOtherMsg = true;
-
                         if ("Notification" in window && Notification.permission === "granted") {
                             new Notification("💬 Pesan dari " + newMsg.sender, {
-                                body: newMsg.text || "Mengirimkan foto bukti.",
+                                body: newMsg.text || "Mengirimkan foto.",
                                 icon: "https://cdn-icons-png.flaticon.com/512/732/732200.png"
                             });
                         }
@@ -213,21 +220,16 @@
                 }
             });
 
-            if (hasNewOtherMsg) {
-                const audio = document.getElementById("notifSound");
-                if (audio) audio.play();
+            if (hasNewOtherMsg && audio) {
+                audio.play().catch(e => console.log("Audio diblokir Chrome:", e));
             }
 
             isFirstLoad = false;
-
             chatBox.innerHTML = "";
             chatBox.appendChild(notif);
 
             let messages = [];
-            snapshot.forEach((document) => {
-                messages.push({ id: document.id, ...document.data() });
-            });
-
+            snapshot.forEach((document) => { messages.push({ id: document.id, ...document.data() }); });
             messages.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
 
             messages.forEach((data) => {
@@ -240,10 +242,7 @@
                 msgBox.className = "message-box";
                 msgDiv.className = "message";
 
-                let ownerBadge = "";
-                if (data.sender === OWNER_NAME) {
-                    ownerBadge = `<span class="badge-owner">PENJUAL</span>`;
-                }
+                let ownerBadge = (data.sender === OWNER_NAME) ? `<span class="badge-owner">PENJUAL</span>` : "";
 
                 if (data.sender === currentUser) {
                     wrapper.className = "message-wrapper me";
@@ -259,31 +258,12 @@
                     msgDiv.appendChild(textP);
                 }
 
-                if (data.image) {
-                    const img = document.createElement("img");
-                    img.src = data.image;
-                    img.className = "chat-img";
-                    img.alt = "Bukti Transfer";
-                    img.onclick = () => bukaZoomFoto(data.image);
-                    msgDiv.appendChild(img);
-                }
-
                 const timeSpan = document.createElement("span");
                 timeSpan.className = "msg-time";
                 timeSpan.innerText = formatWaktu(data.timestamp);
                 msgDiv.appendChild(timeSpan);
 
                 msgBox.appendChild(msgDiv);
-
-                if (isAdminMode) {
-                    const btnDelete = document.createElement("button");
-                    btnDelete.className = "btn-delete-msg";
-                    btnDelete.innerHTML = "🗑️";
-                    btnDelete.title = "Hapus pesan ini";
-                    btnDelete.onclick = () => hapusPesan(data.id);
-                    msgBox.appendChild(btnDelete);
-                }
-
                 wrapper.appendChild(senderTag);
                 wrapper.appendChild(msgBox);
                 chatBox.appendChild(wrapper);
@@ -291,122 +271,25 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
-        async function kirimPesan(imageUrl = null) {
+        async function kirimPesan() {
             const input = document.getElementById("pesanInput");
             const pesan = input.value.trim();
-
-            if (pesan === "" && !imageUrl) return;
+            if (pesan === "") return;
 
             try {
-                const payload = {
+                await addDoc(messagesRef, {
                     roomId: roomId,
                     text: pesan,
                     sender: currentUser,
                     produk: produk,
                     timestamp: serverTimestamp()
-                };
-
-                if (imageUrl) {
-                    payload.image = imageUrl;
-                }
-
-                await addDoc(messagesRef, payload);
+                });
                 input.value = "";
-            } catch (error) {
-                console.error("Gagal kirim pesan: ", error);
-            }
+            } catch (error) { console.error("Gagal kirim:", error); }
         }
 
-        let base64ResultTemp = null;
-
-        document.getElementById("imageInput").addEventListener("change", function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    const maxDim = 500; 
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height && width > maxDim) {
-                        height *= maxDim / width;
-                        width = maxDim;
-                    } else if (height > maxDim) {
-                        width *= maxDim / height;
-                        height = maxDim;
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    base64ResultTemp = canvas.toDataURL('image/jpeg', 0.6);
-
-                    document.getElementById("imgPreviewTarget").src = base64ResultTemp;
-                    document.getElementById("previewModal").style.display = "flex";
-                };
-            };
-            reader.readAsDataURL(file);
-        });
-
-        window.batalKirimFoto = function() {
-            base64ResultTemp = null;
-            document.getElementById("imageInput").value = "";
-            document.getElementById("previewModal").style.display = "none";
-        };
-
-        window.prosesUploadFoto = function() {
-            if (!base64ResultTemp) return;
-
-            kirimPesan(base64ResultTemp);
-            batalKirimFoto();
-        };
-
-        window.bukaZoomFoto = function(urlFoto) {
-            document.getElementById("imgZoomTarget").src = urlFoto;
-            document.getElementById("zoomModal").style.display = "flex";
-        };
-
-        window.tutupZoomFoto = function() {
-            document.getElementById("zoomModal").style.display = "none";
-        };
-
-        window.hapusPesan = async function(docId) {
-            if (confirm("Apakah Anda yakin ingin menghapus pesan ini?")) {
-                try {
-                    await deleteDoc(doc(db, "chats", docId));
-                } catch (error) {
-                    alert("Gagal menghapus pesan!");
-                }
-            }
-        };
-
-        window.hapusSemuaChatRoom = async function() {
-            if (confirm("Yakin ingin MENGHAPUS SEMUA CHAT di room transaksi ini?")) {
-                try {
-                    const querySnapshot = await getDocs(q);
-                    querySnapshot.forEach(async (document) => {
-                        await deleteDoc(doc(db, "chats", document.id));
-                    });
-                    alert("Semua chat di room ini berhasil dibersihkan!");
-                } catch (error) {
-                    alert("Gagal membersihkan room chat!");
-                }
-            }
-        };
-
-        document.getElementById("btnKirim").addEventListener("click", () => kirimPesan());
-        document.getElementById("pesanInput").addEventListener("keypress", (e) => {
-            if (e.key === "Enter") kirimPesan();
-        });
+        document.getElementById("btnKirim").addEventListener("click", kirimPesan);
+        document.getElementById("pesanInput").addEventListener("keypress", (e) => { if (e.key === "Enter") kirimPesan(); });
     </script>
-
 </body>
 </html>
