@@ -12,8 +12,6 @@
         header a:hover { background: rgba(255,255,255,0.3); }
 
         .btn-delete-all { background: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
-        
-        .notif-bar { background: #ffc107; color: #000; padding: 8px 12px; text-align: center; font-size: 12px; font-weight: bold; cursor: pointer; border-bottom: 1px solid #e0a800; display: block; }
 
         .chat-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
         
@@ -31,15 +29,7 @@
         .me .message { background: #007bff; color: white; border-bottom-right-radius: 2px; }
         .other .message { background: white; color: #333; border-bottom-left-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         
-        /* TAMPILAN JAM / WAKTU PESAN (MIRIP WA) */
-        .msg-time { 
-            font-size: 10px; 
-            opacity: 0.75; 
-            margin-top: 4px; 
-            text-align: right; 
-            display: block; 
-        }
-
+        .msg-time { font-size: 10px; opacity: 0.75; margin-top: 4px; text-align: right; display: block; }
         .chat-img { max-width: 100%; width: 200px; border-radius: 8px; margin-top: 5px; cursor: pointer; display: block; border: 1px solid #ddd; }
 
         .btn-delete-msg { background: none; border: none; color: #dc3545; font-size: 12px; cursor: pointer; opacity: 0.6; padding: 2px 5px; }
@@ -51,6 +41,14 @@
         .chat-input input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
         .btn-upload { background: #6c757d; color: white; border: none; padding: 10px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; }
         .btn-kirim { background: #28a745; color: white; border: none; padding: 10px 18px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+
+        /* MODAL POPUP NOTIFIKASI DI TENGAH LAYAR */
+        .notif-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 3000; }
+        .notif-modal-box { background: white; padding: 20px; border-radius: 12px; width: 280px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .notif-modal-box h3 { margin-top: 0; color: #333; font-size: 16px; }
+        .notif-modal-box p { font-size: 13px; color: #666; margin-bottom: 20px; line-height: 1.4; }
+        .btn-allow-notif { background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; font-size: 13px; }
+        .btn-deny-notif { background: transparent; color: #888; border: none; padding: 8px; margin-top: 5px; font-size: 11px; cursor: pointer; text-decoration: underline; }
 
         /* PREVIEW FOTO */
         .preview-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); justify-content: center; align-items: center; z-index: 1000; }
@@ -74,8 +72,13 @@
         <button id="btnDeleteRoom" class="btn-delete-all" style="display:none;" onclick="hapusSemuaChatRoom()">🗑️ Hapus Room</button>
     </header>
 
-    <div id="notifBar" class="notif-bar" onclick="aktifkanNotifPembeli()">
-        🔔 Klik di sini untuk aktifkan notifikasi balasan penjual!
+    <div id="notifModal" class="notif-modal-overlay">
+        <div class="notif-modal-box">
+            <h3>🔔 Aktifkan Notifikasi Chat</h3>
+            <p>Aktifkan notifikasi agar kamu langsung tahu saat Penjual membalas pesanmu meski sedang keluar dari web.</p>
+            <button class="btn-allow-notif" onclick="aktifkanNotifPembeli()">Izinkan Notifikasi 🚀</button>
+            <button class="btn-deny-notif" onclick="tutupNotifModal()">Nanti Saja</button>
+        </div>
     </div>
 
     <div class="chat-container" id="chatBox"></div>
@@ -122,7 +125,6 @@
         const db = getFirestore(app);
 
         const OWNER_NAME = "Gilang"; 
-        
         const isAdminMode = sessionStorage.getItem("isAdminLoggedIn") === "true";
         const currentUser = isAdminMode ? OWNER_NAME : (sessionStorage.getItem("currentUser") || "Pengunjung");
 
@@ -130,16 +132,31 @@
         const roomId = urlParams.get('room') || 'general_room';
         const produk = urlParams.get('produk') || 'Produk Game';
 
-        const notifBar = document.getElementById("notifBar");
+        const notifModal = document.getElementById("notifModal");
 
         if (isAdminMode) {
             document.getElementById("btnDeleteRoom").style.display = "block";
-            if (notifBar) notifBar.style.display = "none";
         } else {
-            if ("Notification" in window && Notification.permission === "granted") {
-                if (notifBar) notifBar.style.display = "none";
+            // Tampilkan Pop-Up Tengah jika belum diizinkan
+            if ("Notification" in window && Notification.permission !== "granted") {
+                notifModal.style.display = "flex";
             }
         }
+
+        window.tutupNotifModal = function() {
+            notifModal.style.display = "none";
+        };
+
+        window.aktifkanNotifPembeli = function() {
+            if ("Notification" in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        alert("Notifikasi Aktif! Kamu akan dapat pemberitahuan jika Penjual membalas.");
+                    }
+                    notifModal.style.display = "none";
+                });
+            }
+        };
 
         const chatBox = document.getElementById("chatBox");
 
@@ -151,24 +168,6 @@
         const messagesRef = collection(db, "chats");
         const q = query(messagesRef, where("roomId", "==", roomId));
 
-        window.aktifkanNotifPembeli = function() {
-            if ("Notification" in window) {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        alert("Notifikasi aktif! Kamu akan mendengar bunyi saat Penjual membalas.");
-                        if (notifBar) notifBar.style.display = "none";
-                    } else {
-                        alert("Izin notifikasi ditolak oleh browser.");
-                    }
-                });
-            } else {
-                alert("Browser HP kamu tidak mendukung notifikasi otomatis.");
-            }
-        };
-
-        let isFirstLoad = true;
-
-        // FUNGSI MENGAMBIL JAM & MENIT SAMA SEPERTI WHATSAPP
         function formatWaktu(timestamp) {
             let date;
             if (timestamp && timestamp.toDate) {
@@ -183,6 +182,8 @@
             let menit = date.getMinutes().toString().padStart(2, '0');
             return jam + ":" + menit;
         }
+
+        let isFirstLoad = true;
 
         onSnapshot(q, (snapshot) => {
             let hasNewOtherMsg = false;
@@ -258,7 +259,6 @@
                     msgDiv.appendChild(img);
                 }
 
-                // ELEMEN JAM / WAKTU PESAN
                 const timeSpan = document.createElement("span");
                 timeSpan.className = "msg-time";
                 timeSpan.innerText = formatWaktu(data.timestamp);
