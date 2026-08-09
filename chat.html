@@ -4,9 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Private Chat Transaksi</title>
+
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "65f2eb4f-bc7f-4886-896a-f1165ee2bc3a",
+        });
+      });
+    </script>
+
     <style>
         body { font-family: Arial, sans-serif; background: #eef2f5; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
-        
         header { background: #007bff; color: white; padding: 10px 15px; text-align: center; font-weight: bold; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
         header a { color: white; text-decoration: none; font-size: 13px; background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 4px; }
 
@@ -35,11 +45,6 @@
         .chat-input input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
         .btn-upload { background: #6c757d; color: white; border: none; padding: 10px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; }
         .btn-kirim { background: #28a745; color: white; border: none; padding: 10px 18px; border-radius: 5px; font-weight: bold; cursor: pointer; }
-
-        .notif-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 3000; }
-        .notif-modal-box { background: white; padding: 20px; border-radius: 12px; width: 280px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .btn-allow-notif { background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; font-size: 13px; }
-        .btn-deny-notif { background: transparent; color: #888; border: none; padding: 8px; margin-top: 5px; font-size: 11px; cursor: pointer; text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -49,15 +54,6 @@
         <span>Private Chat Transaksi</span>
         <button id="btnDeleteRoom" class="btn-delete-all" style="display:none;" onclick="hapusSemuaChatRoom()">🗑️ Hapus Room</button>
     </header>
-
-    <div id="notifModal" class="notif-modal-overlay">
-        <div class="notif-modal-box">
-            <h3>🔔 Aktifkan Notifikasi Balasan</h3>
-            <p style="font-size: 13px; color: #666;">Aktifkan notifikasi agar kamu langsung tahu saat Penjual membalas pesanmu meski kamu sedang keluar dari web.</p>
-            <button class="btn-allow-notif" onclick="aktifkanNotifPembeli()">Izinkan Notifikasi 🚀</button>
-            <button class="btn-deny-notif" onclick="tutupNotifModal()">Nanti Saja</button>
-        </div>
-    </div>
 
     <div class="chat-container" id="chatBox"></div>
 
@@ -72,8 +68,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, where, getDocs, serverTimestamp, enableNetwork } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, serverTimestamp, enableNetwork } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
@@ -86,21 +81,6 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const messaging = getMessaging(app);
-
-        // ====================================================
-        // 🔑 MASUKKAN VAPID KEY YANG SAMA DENGAN ADMIN.HTML DI SINI:
-        // ====================================================
-        const MY_VAPID_KEY = "PASTE_VAPID_KEY_FIREBASE_KAMU_DI_SINI";
-
-        // DAFTARKAN SERVICE WORKER UNTUK PEMBELI
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/firebase-messaging-sw.js')
-            .then((registration) => {
-                console.log('Service Worker Pembeli Terdaftar:', registration);
-            })
-            .catch((err) => console.log('SW Registration error:', err));
-        }
 
         const OWNER_NAME = "Gilang"; 
         const isAdminMode = sessionStorage.getItem("isAdminLoggedIn") === "true";
@@ -112,7 +92,7 @@
 
         const audio = document.getElementById("notifSound");
 
-        // UNLOCK AUDIO BROWSER CHROME DI INTERAKSI PERTAMA
+        // UNLOCK AUDIO AUTOPLAY
         document.addEventListener("click", () => {
             if (audio) {
                 audio.play().then(() => {
@@ -122,67 +102,16 @@
             }
         }, { once: true });
 
-        // AUTO-RECONNECT FIREBASE SAAT DIBUKA ULANG DI CHROME
+        // AUTO-RECONNECT CHROME
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === "visible") {
                 enableNetwork(db);
             }
         });
 
-        const notifModal = document.getElementById("notifModal");
-        if (!isAdminMode) {
-            if (localStorage.getItem("notifPromptAnswered") !== "true" && "Notification" in window && Notification.permission !== "granted") {
-                notifModal.style.display = "flex";
-            } else {
-                requestFCMToken();
-            }
-        } else {
+        if (isAdminMode) {
             document.getElementById("btnDeleteRoom").style.display = "block";
         }
-
-        window.tutupNotifModal = function() {
-            localStorage.setItem("notifPromptAnswered", "true");
-            notifModal.style.display = "none";
-        };
-
-        window.aktifkanNotifPembeli = function() {
-            localStorage.setItem("notifPromptAnswered", "true");
-            if ("Notification" in window) {
-                Notification.requestPermission().then((permission) => {
-                    if (permission === "granted") {
-                        alert("Notifikasi Aktif! Kamu akan dapat pemberitahuan jika Penjual membalas.");
-                        requestFCMToken();
-                    }
-                    notifModal.style.display = "none";
-                });
-            } else {
-                notifModal.style.display = "none";
-            }
-        };
-
-        // FUNGSI MEMINTA TOKEN FCM PERANGKAT PEMBELI
-        function requestFCMToken() {
-            if (MY_VAPID_KEY === "BD63RP-z3O9xIrJfLlt5zBhiIWbCgsV7wGhOAxu7QapPyDk6KIZfmleOUPnm-vl6hqaFjmAS1Gk66r9e2spDUp4") {
-                console.log("VAPID Key belum diganti di chat.html!");
-                return;
-            }
-
-            getToken(messaging, { vapidKey: MY_VAPID_KEY }).then((currentToken) => {
-                if (currentToken) {
-                    console.log("Token FCM Pembeli:", currentToken);
-                } else {
-                    console.log("Izin tidak diberikan untuk token.");
-                }
-            }).catch((err) => {
-                console.log("An error occurred while retrieving token. ", err);
-            });
-        }
-
-        // MENANGANI NOTIFIKASI SAAT CHAT SEDANG DIBUKA
-        onMessage(messaging, (payload) => {
-            console.log('Pesan FCM Diterima Pembeli: ', payload);
-            if (audio) audio.play();
-        });
 
         const chatBox = document.getElementById("chatBox");
         const notif = document.createElement("div");
@@ -210,12 +139,6 @@
                     const newMsg = change.doc.data();
                     if (newMsg.sender !== currentUser) {
                         hasNewOtherMsg = true;
-                        if ("Notification" in window && Notification.permission === "granted") {
-                            new Notification("💬 Pesan dari " + newMsg.sender, {
-                                body: newMsg.text || "Mengirimkan foto.",
-                                icon: "https://cdn-icons-png.flaticon.com/512/732/732200.png"
-                            });
-                        }
                     }
                 }
             });
