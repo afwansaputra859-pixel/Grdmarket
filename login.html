@@ -9,9 +9,10 @@
         .box { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 300px; text-align: center; }
         .form-group { margin-bottom: 15px; text-align: left; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        .btn { width: 100%; background: #007bff; color: white; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        .form-group input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; outline: none; }
+        .btn { width: 100%; background: #007bff; color: white; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-bottom: 8px; }
         .btn-secondary { background: #6c757d; }
+        .btn:hover { opacity: 0.9; }
     </style>
 </head>
 <body>
@@ -32,8 +33,32 @@
         </form>
     </div>
 
-    <script>
-        function prosesDaftar() {
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            query, 
+            where, 
+            getDocs, 
+            addDoc, 
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
+            authDomain: "website-611eb.firebaseapp.com",
+            projectId: "website-611eb",
+            storageBucket: "website-611eb.firebasestorage.app",
+            messagingSenderId: "90650745026",
+            appId: "1:90650745026:web:7c9dc54997c4970c8e035b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // FUNGSI DAFTAR AKUN BARU
+        window.prosesDaftar = async function() {
             var user = document.getElementById("username").value.trim();
             var pass = document.getElementById("password").value.trim();
 
@@ -42,26 +67,79 @@
                 return;
             }
 
-            localStorage.setItem("user_" + user, pass);
-            alert("Akun '" + user + "' berhasil dibuat! Klik 'Masuk (Login)'.");
-        }
+            // Mencegah penggunaan nama Admin / Penjual
+            if (user.toLowerCase() === "gilang" || user.toLowerCase() === "admin") {
+                alert("⚠️ Nama '" + user + "' dilindungi dan tidak bisa digunakan!");
+                return;
+            }
 
-        function prosesLogin() {
+            try {
+                const usersRef = collection(db, "users");
+                // Cek nama yang sama (di-lowercase biar 'Gilang' dan 'gilang' terdeteksi sama)
+                const q = query(usersRef, where("username_lowercase", "==", user.toLowerCase()));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    alert("⚠️ Nama '" + user + "' sudah digunakan oleh orang lain! Gunakan nama lain.");
+                    return;
+                }
+
+                // Jika nama belum ada, simpan ke Firebase
+                await addDoc(usersRef, {
+                    username: user,
+                    username_lowercase: user.toLowerCase(),
+                    password: pass,
+                    createdAt: serverTimestamp()
+                });
+
+                alert("✅ Akun '" + user + "' berhasil dibuat! Silakan klik 'Masuk (Login)'.");
+
+            } catch (error) {
+                console.error("Gagal daftar:", error);
+                alert("Terjadi kesalahan saat pendaftaran!");
+            }
+        };
+
+        // FUNGSI LOGIN
+        window.prosesLogin = async function() {
             var user = document.getElementById("username").value.trim();
             var pass = document.getElementById("password").value.trim();
 
-            var savedPassword = localStorage.getItem("user_" + user);
-
-            if (savedPassword && savedPassword === pass) {
-                sessionStorage.setItem("isLoggedIn", "true");
-                sessionStorage.setItem("currentUser", user); 
-
-                alert("Login Berhasil! Selamat datang, " + user);
-                window.location.href = "index.html";
-            } else {
-                alert("Nama belum terdaftar atau Password salah!");
+            if (user === "" || pass === "") {
+                alert("Isi Nama dan Password terlebih dahulu!");
+                return;
             }
-        }
+
+            try {
+                const usersRef = collection(db, "users");
+                const q = query(usersRef, where("username_lowercase", "==", user.toLowerCase()));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    alert("⚠️ Nama belum terdaftar!");
+                    return;
+                }
+
+                let userData = null;
+                querySnapshot.forEach(doc => {
+                    userData = doc.data();
+                });
+
+                if (userData && userData.password === pass) {
+                    sessionStorage.setItem("isLoggedIn", "true");
+                    sessionStorage.setItem("currentUser", userData.username);
+
+                    alert("Login Berhasil! Selamat datang, " + userData.username);
+                    window.location.href = "index.html";
+                } else {
+                    alert("Password salah!");
+                }
+
+            } catch (error) {
+                console.error("Gagal login:", error);
+                alert("Terjadi kesalahan saat login!");
+            }
+        };
     </script>
 
 </body>
