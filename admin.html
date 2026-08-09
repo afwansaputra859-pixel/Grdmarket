@@ -1,4 +1,4 @@
-<!DOCTY<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -12,7 +12,6 @@
         .login-box h3 { margin-top: 0; color: #333; }
         .login-box input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         .login-box button { width: 100%; background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .login-box button:hover { background: #218838; }
 
         /* DASHBOARD STYLE */
         #adminDashboard { display: none; }
@@ -21,18 +20,24 @@
         .btn-logout { background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
         
         .container { padding: 20px; max-width: 800px; margin: 0 auto; }
-        .notif-bar { background: #ffc107; color: #000; padding: 12px; text-align: center; font-weight: bold; border-radius: 8px; margin-bottom: 20px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        /* MODAL POPUP NOTIFIKASI TENGAH */
+        .notif-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 3000; }
+        .notif-modal-box { background: white; padding: 25px; border-radius: 12px; width: 290px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
+        .notif-modal-box h3 { margin-top: 0; color: #333; font-size: 18px; }
+        .notif-modal-box p { font-size: 14px; color: #666; margin-bottom: 20px; line-height: 1.5; }
+        .btn-allow-notif { background: #28a745; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; font-size: 14px; }
+        .btn-deny-notif { background: transparent; color: #999; border: none; padding: 8px; margin-top: 10px; font-size: 12px; cursor: pointer; text-decoration: underline; }
+
         .card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .room-list { display: flex; flex-direction: column; gap: 10px; }
         
-        .room-item { background: #fff; border: 1px solid #e0e0e0; border-left: 5px solid #007bff; border-radius: 6px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .room-item { background: #fff; border: 1px solid #e0e0e0; border-left: 5px solid #007bff; border-radius: 6px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
         .room-item:hover { background: #f8f9fa; }
         .room-info h4 { margin: 0 0 5px 0; color: #333; font-size: 15px; }
         .room-info p { margin: 0; color: #666; font-size: 12px; }
         
         .btn-open-chat { background: #28a745; color: white; text-decoration: none; padding: 8px 14px; border-radius: 5px; font-size: 13px; font-weight: bold; }
-        .btn-open-chat:hover { background: #218838; }
-
         .empty-state { text-align: center; color: #888; padding: 30px; font-style: italic; }
     </style>
 </head>
@@ -42,24 +47,29 @@
         <h3>🔒 Login Admin</h3>
         <input type="text" id="adminUser" placeholder="Username Admin">
         <input type="password" id="adminPass" placeholder="Password Admin">
-        <button onclick="loginAdmin()">Masuk Admin</button>
+        <button onclick="loginAdmin()">Masuk Dashboard</button>
     </div>
 
     <div id="adminDashboard">
         <header>
-            <h2>👨‍💼 Dashboard Admin (Gilang)</h2>
+            <h2>👨‍💼 Admin Panel (Gilang)</h2>
             <button class="btn-logout" onclick="logoutAdmin()">Keluar</button>
         </header>
 
-        <div class="container">
-            <div id="notifBar" class="notif-bar" onclick="aktifkanNotifAdmin()">
-                🔔 Klik di sini untuk mengaktifkan notifikasi pesan masuk dari pembeli!
+        <div id="notifModal" class="notif-modal-overlay">
+            <div class="notif-modal-box">
+                <h3>🔔 Aktifkan Notifikasi?</h3>
+                <p>Nyalakan notifikasi agar HP kamu berbunyi dan memunculkan pesan melayang saat ada pembeli chat masuk!</p>
+                <button class="btn-allow-notif" onclick="aktifkanNotifAdmin()">Izinkan Notifikasi 🚀</button>
+                <button class="btn-deny-notif" onclick="tutupNotifModal()">Nanti Saja</button>
             </div>
+        </div>
 
+        <div class="container">
             <div class="card">
-                <h3 style="margin-top:0; color:#333; font-size: 16px;">💬 Daftar Room Chat Pembeli Aktif</h3>
+                <h3 style="margin-top:0; color:#333; font-size: 16px;">💬 Daftar Obrolan Pembeli</h3>
                 <div id="roomContainer" class="room-list">
-                    <div class="empty-state">Memuat daftar obrolan transaksi...</div>
+                    <div class="empty-state">Memuat obrolan...</div>
                 </div>
             </div>
         </div>
@@ -83,38 +93,26 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ==========================================
-        // 🔑 ATUR USERNAME & PASSWORD ADMIN DI SINI
-        // ==========================================
+        // KREDENSIAL LOGIN
         const ADMIN_USER_RIGHT = "Gilang"; 
-        const ADMIN_PASS_RIGHT = "kolakpisang123468"; // <-- UBAH PASSWORD DI SINI!
+        const ADMIN_PASS_RIGHT = "12345"; 
 
-        // DAFTARKAN SERVICE WORKER UNTUK NOTIFIKASI MELAYANG
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/firebase-messaging-sw.js')
-            .then((registration) => {
-                console.log('Service Worker terdaftar:', registration.scope);
-            })
-            .catch((err) => {
-                console.log('Service Worker gagal:', err);
-            });
+            navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(e => console.log(e));
         }
 
-        // FUNGSI LOGIN ADMIN
         window.loginAdmin = function() {
-            const userInput = document.getElementById("adminUser").value.trim();
-            const passInput = document.getElementById("adminPass").value.trim();
-
-            if (userInput === ADMIN_USER_RIGHT && passInput === ADMIN_PASS_RIGHT) {
+            const user = document.getElementById("adminUser").value.trim();
+            const pass = document.getElementById("adminPass").value.trim();
+            if (user === ADMIN_USER_RIGHT && pass === ADMIN_PASS_RIGHT) {
                 sessionStorage.setItem("isAdminLoggedIn", "true");
                 sessionStorage.setItem("currentUser", "Gilang");
                 showDashboard();
             } else {
-                alert("Username atau Password Admin SALAH!");
+                alert("Login Gagal! Cek kembali username/password.");
             }
         };
 
-        // CEK SESI LOGIN
         if (sessionStorage.getItem("isAdminLoggedIn") === "true") {
             showDashboard();
         }
@@ -123,33 +121,31 @@
             document.getElementById("loginSection").style.display = "none";
             document.getElementById("adminDashboard").style.display = "block";
 
-            const notifBar = document.getElementById("notifBar");
-            if ("Notification" in window && Notification.permission === "granted") {
-                if (notifBar) notifBar.style.display = "none";
+            // Munculkan Pop-up Notifikasi jika belum diizinkan
+            if ("Notification" in window && Notification.permission !== "granted") {
+                document.getElementById("notifModal").style.display = "flex";
             }
-
             loadRooms();
         }
 
-        window.logoutAdmin = function() {
-            sessionStorage.removeItem("isAdminLoggedIn");
-            alert("Anda telah keluar dari mode Admin.");
-            location.reload();
+        window.tutupNotifModal = function() {
+            document.getElementById("notifModal").style.display = "none";
         };
 
         window.aktifkanNotifAdmin = function() {
             if ("Notification" in window) {
                 Notification.requestPermission().then(permission => {
                     if (permission === "granted") {
-                        alert("Notifikasi Admin Aktif! Anda akan mendapat pesan & suara saat ada pembeli chat.");
-                        document.getElementById("notifBar").style.display = "none";
-                    } else {
-                        alert("Izin notifikasi ditolak oleh browser.");
+                        alert("Notifikasi Aktif! Kamu akan dapat pesan melayang & suara.");
                     }
+                    tutupNotifModal();
                 });
-            } else {
-                alert("Browser tidak mendukung notifikasi otomatis.");
             }
+        };
+
+        window.logoutAdmin = function() {
+            sessionStorage.removeItem("isAdminLoggedIn");
+            location.reload();
         };
 
         function formatWaktu(timestamp) {
@@ -161,7 +157,6 @@
             } else {
                 date = new Date();
             }
-
             let jam = date.getHours().toString().padStart(2, '0');
             let menit = date.getMinutes().toString().padStart(2, '0');
             return jam + ":" + menit;
@@ -171,20 +166,16 @@
 
         function loadRooms() {
             const roomContainer = document.getElementById("roomContainer");
-            const messagesRef = collection(db, "chats");
-
-            onSnapshot(messagesRef, (snapshot) => {
+            onSnapshot(collection(db, "chats"), (snapshot) => {
                 let hasNewBuyerMsg = false;
-
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === "added" && !isFirstLoad) {
                         const data = change.doc.data();
                         if (data.sender !== ADMIN_USER_RIGHT) {
                             hasNewBuyerMsg = true;
-
                             if ("Notification" in window && Notification.permission === "granted") {
-                                new Notification("🛒 Pesan Baru dari " + data.sender, {
-                                    body: (data.text || "Mengirimkan foto bukti transfer") + " (" + formatWaktu(data.timestamp) + ")",
+                                new Notification("🛒 Pesan dari " + data.sender, {
+                                    body: (data.text || "Mengirim foto bukti") + " (" + formatWaktu(data.timestamp) + ")",
                                     icon: "https://cdn-icons-png.flaticon.com/512/732/732200.png"
                                 });
                             }
@@ -192,65 +183,40 @@
                     }
                 });
 
-                if (hasNewBuyerMsg) {
-                    const audio = document.getElementById("notifSound");
-                    if (audio) audio.play();
-                }
-
+                if (hasNewBuyerMsg) { document.getElementById("notifSound").play(); }
                 isFirstLoad = false;
 
                 let roomsMap = {};
-
                 snapshot.forEach((doc) => {
                     const chat = doc.data();
-                    const roomId = chat.roomId || "general_room";
-
-                    if (!roomsMap[roomId]) {
-                        roomsMap[roomId] = {
-                            roomId: roomId,
-                            produk: chat.produk || "Produk Game",
-                            lastSender: chat.sender,
-                            lastMsg: chat.text || "📷 Upload Foto Bukti",
-                            timestamp: chat.timestamp
-                        };
-                    } else {
-                        if ((chat.timestamp?.seconds || 0) >= (roomsMap[roomId].timestamp?.seconds || 0)) {
-                            roomsMap[roomId].lastSender = chat.sender;
-                            roomsMap[roomId].lastMsg = chat.text || "📷 Upload Foto Bukti";
-                            roomsMap[roomId].timestamp = chat.timestamp;
-                        }
+                    const rid = chat.roomId || "general";
+                    if (!roomsMap[rid] || (chat.timestamp?.seconds >= roomsMap[rid].timestamp?.seconds)) {
+                        roomsMap[rid] = { ...chat, roomId: rid };
                     }
                 });
 
                 roomContainer.innerHTML = "";
-                const roomList = Object.values(roomsMap);
-
-                if (roomList.length === 0) {
-                    roomContainer.innerHTML = `<div class="empty-state">Belum ada chat transaksi dari pembeli.</div>`;
+                const list = Object.values(roomsMap).sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                
+                if (list.length === 0) {
+                    roomContainer.innerHTML = `<div class="empty-state">Belum ada chat masuk.</div>`;
                     return;
                 }
 
-                roomList.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-
-                roomList.forEach((room) => {
-                    const roomElement = document.createElement("div");
-                    roomElement.className = "room-item";
-                    
-                    const timeStr = formatWaktu(room.timestamp);
-
-                    roomElement.innerHTML = `
+                list.forEach((room) => {
+                    const div = document.createElement("div");
+                    div.className = "room-item";
+                    div.innerHTML = `
                         <div class="room-info">
                             <h4>🛍️ ${decodeURIComponent(room.produk)}</h4>
-                            <p><b>${room.lastSender}:</b> ${room.lastMsg} <span style="font-size: 10px; color: #888;">• ${timeStr}</span></p>
+                            <p><b>${room.lastSender || room.sender}:</b> ${room.text || "📷 Bukti Foto"} <span style="font-size:10px;color:#999;">• ${formatWaktu(room.timestamp)}</span></p>
                         </div>
-                        <a href="chat.html?room=${room.roomId}&produk=${encodeURIComponent(room.produk)}" class="btn-open-chat">Buka Chat 💬</a>
+                        <a href="chat.html?room=${room.roomId}&produk=${encodeURIComponent(room.produk)}" class="btn-open-chat">Balas 💬</a>
                     `;
-
-                    roomContainer.appendChild(roomElement);
+                    roomContainer.appendChild(div);
                 });
             });
         }
     </script>
-
 </body>
 </html>
