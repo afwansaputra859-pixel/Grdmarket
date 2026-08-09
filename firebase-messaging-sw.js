@@ -12,17 +12,38 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Menangani notifikasi saat aplikasi ditutup / di background
+// Menangani notifikasi di latar belakang (saat aplikasi/browser ditutup)
 messaging.onBackgroundMessage((payload) => {
-    console.log('[firebase-messaging-sw.js] Pesan diterima di background: ', payload);
-
-    const notificationTitle = payload.notification.title || "Pesan Baru Marketplace";
+    const notificationTitle = payload.notification?.title || "💬 Pesan Baru Marketplace";
     const notificationOptions = {
-        body: payload.notification.body || "Ada pesan masuk dari pembeli!",
+        body: payload.notification?.body || "Ada pesan masuk dari pembeli! Klik untuk membalas.",
         icon: "https://cdn-icons-png.flaticon.com/512/732/732200.png",
         badge: "https://cdn-icons-png.flaticon.com/512/732/732200.png",
-        vibrate: [200, 100, 200]
+        vibrate: [200, 100, 200],
+        data: {
+            url: "/admin.html" // Alamat tujuan saat notifikasi diklik
+        }
     };
 
     self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// EVENT SAAT NOTIFIKASI DIKLIK OLEH PENJUAL
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close(); // Tutup spanduk notifikasi
+
+    // Buka atau fokuskan ke halaman admin.html
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+            for (let i = 0; i < clientList.length; i++) {
+                let client = clientList[i];
+                if (client.url.includes('admin.html') && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow('/admin.html');
+            }
+        })
+    );
 });
