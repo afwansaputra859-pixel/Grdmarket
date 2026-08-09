@@ -6,14 +6,11 @@
     <title>Dashboard Admin - Panel Chat Transaksi</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 0; }
-        
-        /* LOGIN STYLE */
         .login-box { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 280px; margin: 100px auto; text-align: center; }
         .login-box h3 { margin-top: 0; color: #333; }
         .login-box input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         .login-box button { width: 100%; background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
 
-        /* DASHBOARD STYLE */
         #adminDashboard { display: none; }
         header { background: #343a40; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
         header h2 { margin: 0; font-size: 18px; }
@@ -21,7 +18,6 @@
         
         .container { padding: 20px; max-width: 800px; margin: 0 auto; }
         
-        /* MODAL POPUP NOTIFIKASI TENGAH */
         .notif-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 3000; }
         .notif-modal-box { background: white; padding: 25px; border-radius: 12px; width: 290px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
         .notif-modal-box h3 { margin-top: 0; color: #333; font-size: 18px; }
@@ -58,8 +54,8 @@
 
         <div id="notifModal" class="notif-modal-overlay">
             <div class="notif-modal-box">
-                <h3>🔔 Aktifkan Notifikasi?</h3>
-                <p>Nyalakan notifikasi agar HP kamu berbunyi dan memunculkan pesan melayang saat ada pembeli chat masuk!</p>
+                <h3>🔔 Aktifkan Push Notification?</h3>
+                <p>Nyalakan izin agar sistem dapat mendeteksi pesan masuk dari pembeli di layar HP kamu!</p>
                 <button class="btn-allow-notif" onclick="aktifkanNotifAdmin()">Izinkan Notifikasi 🚀</button>
                 <button class="btn-deny-notif" onclick="tutupNotifModal()">Nanti Saja</button>
             </div>
@@ -80,6 +76,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, onSnapshot, enableNetwork } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
@@ -92,21 +89,28 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const messaging = getMessaging(app);
 
-        // USERNAME & PASSWORD ADMIN
+        // ====================================================
+        // 🔑 MASUKKAN VAPID KEY KAMU DI BINA SINI:
+        // ====================================================
+        const MY_VAPID_KEY = "BD63RP-z3O9xIrJfLlt5zBhiIWbCgsV7wGhOAxu7QapPyDk6KIZfmleOUPnm-vl6hqaFjmAS1Gk66r9e2spDUp4";
+
         const ADMIN_USER_RIGHT = "Gilang"; 
-        const ADMIN_PASS_RIGHT = "12345"; 
+        const ADMIN_PASS_RIGHT = "kolakpisang123468"; 
 
         const audio = document.getElementById("notifSound");
 
-        // 1. DAFTARKAN SERVICE WORKER UNTUK NOTIFIKASI LATAR BELAKANG
+        // DAFTARKAN SERVICE WORKER
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/firebase-messaging-sw.js')
-            .then((reg) => console.log('Service Worker Admin Aktif!', reg))
-            .catch((e) => console.log('Service Worker Gagal:', e));
+            .then((registration) => {
+                console.log('Service Worker terdaftar:', registration);
+            })
+            .catch((err) => console.log('SW Registration error:', err));
         }
 
-        // 2. UNLOCK AUDIO AUTOPLAY KHUSUS CHROME SAAT TOUCH/KLIK PERTAMA
+        // UNLOCK AUDIO AUTOPLAY
         document.addEventListener("click", () => {
             if (audio) {
                 audio.play().then(() => {
@@ -116,14 +120,13 @@
             }
         }, { once: true });
 
-        // 3. PAKSA CHROME CONNECT ULANG KE FIREBASE SAAT TAB DIBUKA AGAIN
+        // AUTO-RECONNECT FIREBASE DI CHROME
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === "visible") {
                 enableNetwork(db);
             }
         });
 
-        // FUNGSI LOGIN ADMIN
         window.loginAdmin = function() {
             const user = document.getElementById("adminUser").value.trim();
             const pass = document.getElementById("adminPass").value.trim();
@@ -132,7 +135,7 @@
                 sessionStorage.setItem("currentUser", "Gilang");
                 showDashboard();
             } else { 
-                alert("Login Gagal! Cek Username/Password."); 
+                alert("Login Gagal!"); 
             }
         };
 
@@ -144,9 +147,10 @@
             document.getElementById("loginSection").style.display = "none";
             document.getElementById("adminDashboard").style.display = "block";
 
-            // Pop-up Notifikasi Tengah cuma dipancing 1 KALI saja
             if (localStorage.getItem("adminNotifAnswered") !== "true" && "Notification" in window && Notification.permission !== "granted") {
                 document.getElementById("notifModal").style.display = "flex";
+            } else {
+                requestFCMToken();
             }
             loadRooms();
         }
@@ -161,7 +165,8 @@
             if ("Notification" in window) {
                 Notification.requestPermission().then(permission => {
                     if (permission === "granted") {
-                        alert("Notifikasi Aktif! Kamu akan dapat pesan melayang & suara.");
+                        alert("Push Notification Aktif!");
+                        requestFCMToken();
                     }
                     tutupNotifModal();
                 });
@@ -169,6 +174,30 @@
                 tutupNotifModal();
             }
         };
+
+        // FUNGSI MEMINTA TOKEN FCM PERANGKAT
+        function requestFCMToken() {
+            if (MY_VAPID_KEY === "PASTE_VAPID_KEY_FIREBASE_KAMU_DI_SINI") {
+                console.log("VAPID Key belum diganti di admin.html!");
+                return;
+            }
+
+            getToken(messaging, { vapidKey: MY_VAPID_KEY }).then((currentToken) => {
+                if (currentToken) {
+                    console.log("Token FCM HP Kamu:", currentToken);
+                } else {
+                    console.log("Izin tidak diberikan untuk token.");
+                }
+            }).catch((err) => {
+                console.log("An error occurred while retrieving token. ", err);
+            });
+        }
+
+        // MENANGANI NOTIFIKASI SAAT WEB SEDANG DIBUKA
+        onMessage(messaging, (payload) => {
+            console.log('Pesan FCM Diterima: ', payload);
+            if (audio) audio.play();
+        });
 
         window.logoutAdmin = function() {
             sessionStorage.removeItem("isAdminLoggedIn");
@@ -195,8 +224,6 @@
                         const data = change.doc.data();
                         if (data.sender !== ADMIN_USER_RIGHT) {
                             hasNewBuyerMsg = true;
-                            
-                            // SPANDUK NOTIFIKASI
                             if ("Notification" in window && Notification.permission === "granted") {
                                 new Notification("🛒 Pesan dari " + data.sender, {
                                     body: (data.text || "📷 Mengirim foto bukti") + " (" + formatWaktu(data.timestamp) + ")",
@@ -207,14 +234,12 @@
                     }
                 });
 
-                // MAINkan SUARA
                 if (hasNewBuyerMsg && audio) { 
                     audio.play().catch(e => console.log("Audio diblokir Chrome:", e)); 
                 }
 
                 isFirstLoad = false;
 
-                // KELOMPOKKAN CHAT BERDASARKAN ROOM ID
                 let roomsMap = {};
                 snapshot.forEach((doc) => {
                     const chat = doc.data();
