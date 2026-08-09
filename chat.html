@@ -124,6 +124,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // SERVICE WORKER UNTUK SEMUA BROWSER / CHROME
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(e => console.log(e));
+        }
+
         const OWNER_NAME = "Gilang"; 
         const isAdminMode = sessionStorage.getItem("isAdminLoggedIn") === "true";
         const currentUser = isAdminMode ? OWNER_NAME : (sessionStorage.getItem("currentUser") || "Pengunjung");
@@ -137,17 +142,19 @@
         if (isAdminMode) {
             document.getElementById("btnDeleteRoom").style.display = "block";
         } else {
-            // Tampilkan Pop-Up Tengah jika belum diizinkan
-            if ("Notification" in window && Notification.permission !== "granted") {
+            // TANYA CUMA 1 KALI: Jika belum pernah diklik samasekali
+            if (localStorage.getItem("notifPromptAnswered") !== "true" && "Notification" in window && Notification.permission !== "granted") {
                 notifModal.style.display = "flex";
             }
         }
 
         window.tutupNotifModal = function() {
+            localStorage.setItem("notifPromptAnswered", "true"); // Tandai agar tidak muncul lagi
             notifModal.style.display = "none";
         };
 
         window.aktifkanNotifPembeli = function() {
+            localStorage.setItem("notifPromptAnswered", "true"); // Tandai agar tidak muncul lagi
             if ("Notification" in window) {
                 Notification.requestPermission().then(permission => {
                     if (permission === "granted") {
@@ -155,6 +162,8 @@
                     }
                     notifModal.style.display = "none";
                 });
+            } else {
+                notifModal.style.display = "none";
             }
         };
 

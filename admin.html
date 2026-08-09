@@ -7,13 +7,11 @@
     <style>
         body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 0; }
         
-        /* FORM LOGIN STYLE */
         .login-box { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 280px; margin: 100px auto; text-align: center; }
         .login-box h3 { margin-top: 0; color: #333; }
         .login-box input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         .login-box button { width: 100%; background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
 
-        /* DASHBOARD STYLE */
         #adminDashboard { display: none; }
         header { background: #343a40; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
         header h2 { margin: 0; font-size: 18px; }
@@ -21,7 +19,6 @@
         
         .container { padding: 20px; max-width: 800px; margin: 0 auto; }
         
-        /* MODAL POPUP NOTIFIKASI TENGAH */
         .notif-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 3000; }
         .notif-modal-box { background: white; padding: 25px; border-radius: 12px; width: 290px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
         .notif-modal-box h3 { margin-top: 0; color: #333; font-size: 18px; }
@@ -93,9 +90,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // KREDENSIAL LOGIN
         const ADMIN_USER_RIGHT = "Gilang"; 
-        const ADMIN_PASS_RIGHT = "kolakpisang123468"; 
+        const ADMIN_PASS_RIGHT = "12345"; 
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(e => console.log(e));
@@ -121,18 +117,20 @@
             document.getElementById("loginSection").style.display = "none";
             document.getElementById("adminDashboard").style.display = "block";
 
-            // Munculkan Pop-up Notifikasi jika belum diizinkan
-            if ("Notification" in window && Notification.permission !== "granted") {
+            // TANYA CUMA 1 KALI: Munculkan jika belum pernah direspon
+            if (localStorage.getItem("adminNotifAnswered") !== "true" && "Notification" in window && Notification.permission !== "granted") {
                 document.getElementById("notifModal").style.display = "flex";
             }
             loadRooms();
         }
 
         window.tutupNotifModal = function() {
+            localStorage.setItem("adminNotifAnswered", "true"); // Simpan permanen
             document.getElementById("notifModal").style.display = "none";
         };
 
         window.aktifkanNotifAdmin = function() {
+            localStorage.setItem("adminNotifAnswered", "true"); // Simpan permanen
             if ("Notification" in window) {
                 Notification.requestPermission().then(permission => {
                     if (permission === "granted") {
@@ -140,6 +138,8 @@
                     }
                     tutupNotifModal();
                 });
+            } else {
+                tutupNotifModal();
             }
         };
 
