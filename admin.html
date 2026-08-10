@@ -30,13 +30,12 @@
         .container { padding: 20px; max-width: 800px; margin: 0 auto; }
         .card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .room-list { display: flex; flex-direction: column; gap: 10px; }
-        
         .room-item { background: #fff; border: 1px solid #e0e0e0; border-left: 5px solid #007bff; border-radius: 6px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
-        .room-item:hover { background: #f8f9fa; }
         .room-info h4 { margin: 0 0 5px 0; color: #333; font-size: 15px; }
         .room-info p { margin: 0; color: #666; font-size: 12px; }
-        
-        .btn-open-chat { background: #28a745; color: white; text-decoration: none; padding: 8px 14px; border-radius: 5px; font-size: 13px; font-weight: bold; }
+        .action-btns { display: flex; gap: 6px; }
+        .btn-open-chat { background: #28a745; color: white; text-decoration: none; padding: 8px 12px; border-radius: 5px; font-size: 12px; font-weight: bold; }
+        .btn-del-room { background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 5px; font-size: 12px; font-weight: bold; cursor: pointer; }
         .empty-state { text-align: center; color: #888; padding: 30px; font-style: italic; }
     </style>
 </head>
@@ -65,11 +64,9 @@
         </div>
     </div>
 
-    <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, enableNetwork } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, where, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
@@ -80,36 +77,11 @@
             appId: "1:90650745026:web:7c9dc54997c4970c8e035b"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // =========================================================================
-        // 🔑 MASUKKAN REST API KEY DARI ONESIGNAL KAMU DI SINI:
-        // =========================================================================
-        const ONESIGNAL_REST_KEY = "";
-        const ONESIGNAL_APP_ID = "65f2eb4f-bc7f-4651-81d4-d00b15603f36";
+        initializeApp(firebaseConfig);
+        const db = getFirestore();
 
         const ADMIN_USER_RIGHT = "Gilang"; 
         const ADMIN_PASS_RIGHT = "kolakpisang123468"; 
-
-        const audio = document.getElementById("notifSound");
-
-        // UNLOCK AUDIO AUTOPLAY
-        document.addEventListener("click", () => {
-            if (audio) {
-                audio.play().then(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                }).catch(() => {});
-            }
-        }, { once: true });
-
-        // AUTO-RECONNECT CHROME
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "visible") {
-                enableNetwork(db);
-            }
-        });
 
         window.loginAdmin = function() {
             const user = document.getElementById("adminUser").value.trim();
@@ -123,9 +95,7 @@
             }
         };
 
-        if (sessionStorage.getItem("isAdminLoggedIn") === "true") { 
-            showDashboard(); 
-        }
+        if (sessionStorage.getItem("isAdminLoggedIn") === "true") showDashboard(); 
 
         function showDashboard() {
             document.getElementById("loginSection").style.display = "none";
@@ -138,62 +108,26 @@
             location.reload();
         };
 
+        // HAPUS SELURUH ROOM DARI DASHBOARD ADMIN
+        window.hapusRoomDoc = async function(roomId) {
+            if (!confirm("Yakin mau hapus room chat ini selamanya?")) return;
+            const q = query(collection(db, "chats"), where("roomId", "==", roomId));
+            const snapshot = await getDocs(q);
+            snapshot.forEach(async (documentDoc) => {
+                await deleteDoc(doc(db, "chats", documentDoc.id));
+            });
+            alert("Room berhasil dihapus!");
+        };
+
         function formatWaktu(timestamp) {
             let date = (timestamp && timestamp.toDate) ? timestamp.toDate() : new Date();
-            let jam = date.getHours().toString().padStart(2, '0');
-            let menit = date.getMinutes().toString().padStart(2, '0');
-            return jam + ":" + menit;
+            return date.getHours().toString().padStart(2, '0') + ":" + date.getMinutes().toString().padStart(2, '0');
         }
-
-        // FUNGSI NEMBAK PUSH NOTIFICATION KE PEMBELI DARI ADMIN
-        window.kirimNotifKePembeli = function(teksPesan, targetUrl) {
-            if (ONESIGNAL_REST_KEY === "") {
-                console.log("REST API Key belum dimasukkan!");
-                return;
-            }
-
-            fetch('https://onesignal.com/api/v1/notifications', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json; charset=utf-8',
-                    'Authorization': 'Basic ' + ONESIGNAL_REST_KEY
-                },
-                body: JSON.stringify({
-                    app_id: ONESIGNAL_APP_ID,
-                    included_segments: ["Subscribed Users"],
-                    headings: {"en": "🛍️ Balasan dari Penjual (Gilang)"},
-                    contents: {"en": teksPesan},
-                    url: targetUrl
-                })
-            })
-            .then(res => res.json())
-            .then(data => console.log("Notif Admin Terkirim:", data))
-            .catch(err => console.error("Gagal push dari admin:", err));
-        }
-
-        let isFirstLoad = true;
 
         function loadRooms() {
             const roomContainer = document.getElementById("roomContainer");
             
             onSnapshot(collection(db, "chats"), (snapshot) => {
-                let hasNewBuyerMsg = false;
-                
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === "added" && !isFirstLoad) {
-                        const data = change.doc.data();
-                        if (data.sender !== ADMIN_USER_RIGHT) {
-                            hasNewBuyerMsg = true;
-                        }
-                    }
-                });
-
-                if (hasNewBuyerMsg && audio) { 
-                    audio.play().catch(e => console.log("Audio diblokir Chrome:", e)); 
-                }
-
-                isFirstLoad = false;
-
                 let roomsMap = {};
                 snapshot.forEach((doc) => {
                     const chat = doc.data();
@@ -217,9 +151,12 @@
                     div.innerHTML = `
                         <div class="room-info">
                             <h4>🛍️ ${decodeURIComponent(room.produk)}</h4>
-                            <p><b>${room.lastSender || room.sender}:</b> ${room.text || "📷 Bukti Foto"} <span style="font-size:10px;color:#999;">• ${formatWaktu(room.timestamp)}</span></p>
+                            <p><b>${room.sender}:</b> ${room.text || "Pesan"} <span style="font-size:10px;color:#999;">• ${formatWaktu(room.timestamp)}</span></p>
                         </div>
-                        <a href="chat.html?room=${room.roomId}&produk=${encodeURIComponent(room.produk)}" class="btn-open-chat">Balas 💬</a>
+                        <div class="action-btns">
+                            <a href="chat.html?room=${room.roomId}&produk=${encodeURIComponent(room.produk)}" class="btn-open-chat">Balas 💬</a>
+                            <button onclick="hapusRoomDoc('${room.roomId}')" class="btn-del-room">🗑️ Hapus</button>
+                        </div>
                     `;
                     roomContainer.appendChild(div);
                 });

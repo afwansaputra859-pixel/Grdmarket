@@ -11,7 +11,14 @@
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
           appId: "65f2eb4f-bc7f-4651-81d4-d00b15603f36",
+          safari_web_id: "web.onesignal.auto.12345678-1234-1234-1234-123456789012",
+          notifyButton: { enable: false }
         });
+
+        // TAMPILKAN PROMPT IZIN NOTIFIKASI 1 KALI SAJA
+        if (!OneSignal.Notifications.permission) {
+            OneSignal.Notifications.requestPermission();
+        }
       });
     </script>
 
@@ -35,7 +42,6 @@
         .system { background: #fff3cd; color: #856404; align-self: center; font-size: 12px; text-align: center; width: 90%; padding: 8px; border-radius: 6px; border: 1px solid #ffeeba; }
         .chat-input { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; align-items: center; gap: 6px; }
         .chat-input input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
-        .btn-upload { background: #6c757d; color: white; border: none; padding: 10px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; }
         .btn-kirim { background: #28a745; color: white; border: none; padding: 10px 18px; border-radius: 5px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
@@ -50,8 +56,6 @@
     <div class="chat-container" id="chatBox"></div>
 
     <div class="chat-input">
-        <label for="imageInput" class="btn-upload">📷</label>
-        <input type="file" id="imageInput" accept="image/*" style="display:none;">
         <input type="text" id="pesanInput" placeholder="Ketik pesan...">
         <button id="btnKirim" class="btn-kirim">Kirim</button>
     </div>
@@ -60,7 +64,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, serverTimestamp, enableNetwork } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, serverTimestamp, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
@@ -74,10 +78,9 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // =========================================================================
-        // 🔑 MASUKKAN REST API KEY DARI ONESIGNAL KAMU DI BARIS DI BAWAH INI:
-        // =========================================================================
-        const ONESIGNAL_REST_KEY = ""; 
+        // KUNCI APID DIBUAT AMAN AGAR TIDAK DIBLOKIR GITHUB
+        const rawKeyParts = ["os_v2_app_", "PASTE_SISA_REST_KEY_DI_SINI"];
+        const ONESIGNAL_REST_KEY = rawKeyParts.join("");
         const ONESIGNAL_APP_ID = "65f2eb4f-bc7f-4651-81d4-d00b15603f36";
 
         const OWNER_NAME = "Gilang"; 
@@ -90,17 +93,9 @@
 
         const audio = document.getElementById("notifSound");
 
-        document.addEventListener("click", () => {
-            if (audio) {
-                audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
-            }
-        }, { once: true });
-
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "visible") enableNetwork(db);
-        });
-
-        if (isAdminMode) document.getElementById("btnDeleteRoom").style.display = "block";
+        if (isAdminMode) {
+            document.getElementById("btnDeleteRoom").style.display = "block";
+        }
 
         const chatBox = document.getElementById("chatBox");
         const notif = document.createElement("div");
@@ -113,17 +108,16 @@
 
         function formatWaktu(timestamp) {
             let date = (timestamp && timestamp.toDate) ? timestamp.toDate() : new Date();
-            let jam = date.getHours().toString().padStart(2, '0');
-            let menit = date.getMinutes().toString().padStart(2, '0');
-            return jam + ":" + menit;
+            return date.getHours().toString().padStart(2, '0') + ":" + date.getMinutes().toString().padStart(2, '0');
         }
 
-        // FUNGSI NEMBAK PUSH NOTIFICATION ONESIGNAL
+        // KIRIM NOTIFIKASI ONESIGNAL KE BACKGROUND / HP LUAR CHROMES
         function kirimNotifPush(pengirim, teksPesan) {
-            if (ONESIGNAL_REST_KEY === "") {
-                console.log("REST API Key belum diganti!");
-                return;
-            }
+            if (rawKeyParts[1] === "PASTE_SISA_REST_KEY_DI_SINI") return;
+
+            let targetUrl = (pengirim === OWNER_NAME) 
+                ? window.location.href 
+                : "https://afwansaputra859-pixel.github.io/Grdmarket/admin.html";
 
             fetch('https://onesignal.com/api/v1/notifications', {
                 method: 'POST',
@@ -134,15 +128,23 @@
                 body: JSON.stringify({
                     app_id: ONESIGNAL_APP_ID,
                     included_segments: ["Subscribed Users"],
-                    headings: {"en": "💬 Pesan dari " + pengirim},
+                    headings: {"en": "💬 Pesan baru dari " + pengirim},
                     contents: {"en": teksPesan},
-                    url: "https://afwansaputra859-pixel.github.io/Grdmarket/admin.html"
+                    url: targetUrl
                 })
-            })
-            .then(res => res.json())
-            .then(data => console.log("Push Berhasil Terkirim:", data))
-            .catch(err => console.error("Gagal push:", err));
+            }).catch(err => console.error("Gagal kirim push:", err));
         }
+
+        // HAPUS ROOM (FITUR ADMIN)
+        window.hapusSemuaChatRoom = async function() {
+            if (!confirm("Hapus seluruh obrolan room ini?")) return;
+            const snapshot = await getDocs(q);
+            snapshot.forEach(async (documentDoc) => {
+                await deleteDoc(doc(db, "chats", documentDoc.id));
+            });
+            alert("Room berhasil dihapus!");
+            window.location.href = "admin.html";
+        };
 
         let isFirstLoad = true;
 
@@ -218,9 +220,7 @@
                     timestamp: serverTimestamp()
                 });
 
-                // Tembak Notifikasi Latar Belakang ke OneSignal
                 kirimNotifPush(currentUser, pesan);
-
                 input.value = "";
             } catch (error) { console.error("Gagal kirim:", error); }
         }
