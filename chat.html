@@ -10,7 +10,7 @@
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
-          appId: "65f2eb4f-bc7f-4886-896a-f1165ee2bc3a",
+          appId: "65f2eb4f-bc7f-4651-81d4-d00b15603f36",
         });
       });
     </script>
@@ -19,28 +19,20 @@
         body { font-family: Arial, sans-serif; background: #eef2f5; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
         header { background: #007bff; color: white; padding: 10px 15px; text-align: center; font-weight: bold; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
         header a { color: white; text-decoration: none; font-size: 13px; background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 4px; }
-
         .btn-delete-all { background: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
-
         .chat-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-        
         .message-wrapper { display: flex; flex-direction: column; max-width: 80%; position: relative; }
         .message-wrapper.me { align-self: flex-end; align-items: flex-end; }
         .message-wrapper.other { align-self: flex-start; align-items: flex-start; }
-
         .sender-name { font-size: 11px; color: #666; margin-bottom: 3px; font-weight: bold; display: flex; align-items: center; gap: 4px; }
         .badge-owner { background: #28a745; color: white; font-size: 9px; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; }
-
         .message-box { display: flex; align-items: flex-end; gap: 5px; }
         .me .message-box { flex-direction: row-reverse; }
-
         .message { padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; position: relative; }
         .me .message { background: #007bff; color: white; border-bottom-right-radius: 2px; }
         .other .message { background: white; color: #333; border-bottom-left-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        
         .msg-time { font-size: 10px; opacity: 0.75; margin-top: 4px; text-align: right; display: block; }
         .system { background: #fff3cd; color: #856404; align-self: center; font-size: 12px; text-align: center; width: 90%; padding: 8px; border-radius: 6px; border: 1px solid #ffeeba; }
-        
         .chat-input { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; align-items: center; gap: 6px; }
         .chat-input input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
         .btn-upload { background: #6c757d; color: white; border: none; padding: 10px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; }
@@ -82,6 +74,12 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // =========================================================================
+        // 🔑 MASUKKAN REST API KEY DARI ONESIGNAL KAMU DI BARIS DI BAWAH INI:
+        // =========================================================================
+        const ONESIGNAL_REST_KEY = "os_v2_app_mxzowt54p5dfdaou2afrkyb7g3usg43w6k3u6xml2bvcaeouzdyfdaovb7aoh6oxr57sncyq6fs4vuaewxpkdsu7xrazangwkrlutvy"; 
+        const ONESIGNAL_APP_ID = "65f2eb4f-bc7f-4651-81d4-d00b15603f36";
+
         const OWNER_NAME = "Gilang"; 
         const isAdminMode = sessionStorage.getItem("isAdminLoggedIn") === "true";
         const currentUser = isAdminMode ? OWNER_NAME : (sessionStorage.getItem("currentUser") || "Pengunjung");
@@ -92,26 +90,17 @@
 
         const audio = document.getElementById("notifSound");
 
-        // UNLOCK AUDIO AUTOPLAY
         document.addEventListener("click", () => {
             if (audio) {
-                audio.play().then(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                }).catch(() => {});
+                audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
             }
         }, { once: true });
 
-        // AUTO-RECONNECT CHROME
         document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "visible") {
-                enableNetwork(db);
-            }
+            if (document.visibilityState === "visible") enableNetwork(db);
         });
 
-        if (isAdminMode) {
-            document.getElementById("btnDeleteRoom").style.display = "block";
-        }
+        if (isAdminMode) document.getElementById("btnDeleteRoom").style.display = "block";
 
         const chatBox = document.getElementById("chatBox");
         const notif = document.createElement("div");
@@ -129,23 +118,44 @@
             return jam + ":" + menit;
         }
 
+        // FUNGSI NEMBAK PUSH NOTIFICATION ONESIGNAL
+        function kirimNotifPush(pengirim, teksPesan) {
+            if (ONESIGNAL_REST_KEY === "os_v2_app_mxzowt54p5dfdaou2afrkyb7g3usg43w6k3u6xml2bvcaeouzdyfdaovb7aoh6oxr57sncyq6fs4vuaewxpkdsu7xrazangwkrlutvy") {
+                console.log("REST API Key belum diganti!");
+                return;
+            }
+
+            fetch('https://onesignal.com/api/v1/notifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Authorization': 'Basic ' + ONESIGNAL_REST_KEY
+                },
+                body: JSON.stringify({
+                    app_id: ONESIGNAL_APP_ID,
+                    included_segments: ["Subscribed Users"],
+                    headings: {"en": "💬 Pesan dari " + pengirim},
+                    contents: {"en": teksPesan},
+                    url: "https://afwansaputra859-pixel.github.io/Grdmarket/admin.html"
+                })
+            })
+            .then(res => res.json())
+            .then(data => console.log("Push Berhasil Terkirim:", data))
+            .catch(err => console.error("Gagal push:", err));
+        }
+
         let isFirstLoad = true;
 
         onSnapshot(q, (snapshot) => {
             let hasNewOtherMsg = false;
-
             snapshot.docChanges().forEach((change) => {
                 if (change.type === "added" && !isFirstLoad) {
                     const newMsg = change.doc.data();
-                    if (newMsg.sender !== currentUser) {
-                        hasNewOtherMsg = true;
-                    }
+                    if (newMsg.sender !== currentUser) hasNewOtherMsg = true;
                 }
             });
 
-            if (hasNewOtherMsg && audio) {
-                audio.play().catch(e => console.log("Audio diblokir Chrome:", e));
-            }
+            if (hasNewOtherMsg && audio) audio.play().catch(e => console.log(e));
 
             isFirstLoad = false;
             chatBox.innerHTML = "";
@@ -207,6 +217,10 @@
                     produk: produk,
                     timestamp: serverTimestamp()
                 });
+
+                // Tembak Notifikasi Latar Belakang ke OneSignal
+                kirimNotifPush(currentUser, pesan);
+
                 input.value = "";
             } catch (error) { console.error("Gagal kirim:", error); }
         }
