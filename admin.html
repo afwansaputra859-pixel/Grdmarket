@@ -86,7 +86,7 @@
         // =========================================================================
         // 🔑 MASUKKAN REST API KEY DARI ONESIGNAL KAMU DI SINI:
         // =========================================================================
-        const ONESIGNAL_REST_KEY = "os_v2_app_mxzowt54p5dfdaou2afrkyb7g3usg43w6k3u6xml2bvcaeouzdyfdaovb7aoh6oxr57sncyq6fs4vuaewxpkdsu7xrazangwkrlutvy";
+        const ONESIGNAL_REST_KEY = "";
         const ONESIGNAL_APP_ID = "65f2eb4f-bc7f-4651-81d4-d00b15603f36";
 
         const ADMIN_USER_RIGHT = "Gilang"; 
@@ -147,7 +147,7 @@
 
         // FUNGSI NEMBAK PUSH NOTIFICATION KE PEMBELI DARI ADMIN
         window.kirimNotifKePembeli = function(teksPesan, targetUrl) {
-            if (ONESIGNAL_REST_KEY === "os_v2_app_mxzowt54p5dfdaou2afrkyb7g3usg43w6k3u6xml2bvcaeouzdyfdaovb7aoh6oxr57sncyq6fs4vuaewxpkdsu7xrazangwkrlutvy") {
+            if (ONESIGNAL_REST_KEY === "") {
                 console.log("REST API Key belum dimasukkan!");
                 return;
             }
