@@ -10,7 +10,7 @@
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
-          appId: "65f2eb4f-bc7f-4886-896a-f1165ee2bc3a",
+          appId: "65f2eb4f-bc7f-4651-81d4-d00b15603f36",
         });
       });
     </script>
@@ -30,10 +30,12 @@
         .container { padding: 20px; max-width: 800px; margin: 0 auto; }
         .card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .room-list { display: flex; flex-direction: column; gap: 10px; }
+        
         .room-item { background: #fff; border: 1px solid #e0e0e0; border-left: 5px solid #007bff; border-radius: 6px; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
         .room-item:hover { background: #f8f9fa; }
         .room-info h4 { margin: 0 0 5px 0; color: #333; font-size: 15px; }
         .room-info p { margin: 0; color: #666; font-size: 12px; }
+        
         .btn-open-chat { background: #28a745; color: white; text-decoration: none; padding: 8px 14px; border-radius: 5px; font-size: 13px; font-weight: bold; }
         .empty-state { text-align: center; color: #888; padding: 30px; font-style: italic; }
     </style>
@@ -81,19 +83,32 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // =========================================================================
+        // 🔑 MASUKKAN REST API KEY DARI ONESIGNAL KAMU DI SINI:
+        // =========================================================================
+        const ONESIGNAL_REST_KEY = "os_v2_app_mxzowt54p5dfdaou2afrkyb7g3usg43w6k3u6xml2bvcaeouzdyfdaovb7aoh6oxr57sncyq6fs4vuaewxpkdsu7xrazangwkrlutvy";
+        const ONESIGNAL_APP_ID = "65f2eb4f-bc7f-4651-81d4-d00b15603f36";
+
         const ADMIN_USER_RIGHT = "Gilang"; 
         const ADMIN_PASS_RIGHT = "kolakpisang123468"; 
 
         const audio = document.getElementById("notifSound");
 
+        // UNLOCK AUDIO AUTOPLAY
         document.addEventListener("click", () => {
             if (audio) {
-                audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }).catch(() => {});
             }
         }, { once: true });
 
+        // AUTO-RECONNECT CHROME
         document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "visible") enableNetwork(db);
+            if (document.visibilityState === "visible") {
+                enableNetwork(db);
+            }
         });
 
         window.loginAdmin = function() {
@@ -108,7 +123,9 @@
             }
         };
 
-        if (sessionStorage.getItem("isAdminLoggedIn") === "true") showDashboard(); 
+        if (sessionStorage.getItem("isAdminLoggedIn") === "true") { 
+            showDashboard(); 
+        }
 
         function showDashboard() {
             document.getElementById("loginSection").style.display = "none";
@@ -128,6 +145,32 @@
             return jam + ":" + menit;
         }
 
+        // FUNGSI NEMBAK PUSH NOTIFICATION KE PEMBELI DARI ADMIN
+        window.kirimNotifKePembeli = function(teksPesan, targetUrl) {
+            if (ONESIGNAL_REST_KEY === "os_v2_app_mxzowt54p5dfdaou2afrkyb7g3usg43w6k3u6xml2bvcaeouzdyfdaovb7aoh6oxr57sncyq6fs4vuaewxpkdsu7xrazangwkrlutvy") {
+                console.log("REST API Key belum dimasukkan!");
+                return;
+            }
+
+            fetch('https://onesignal.com/api/v1/notifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Authorization': 'Basic ' + ONESIGNAL_REST_KEY
+                },
+                body: JSON.stringify({
+                    app_id: ONESIGNAL_APP_ID,
+                    included_segments: ["Subscribed Users"],
+                    headings: {"en": "🛍️ Balasan dari Penjual (Gilang)"},
+                    contents: {"en": teksPesan},
+                    url: targetUrl
+                })
+            })
+            .then(res => res.json())
+            .then(data => console.log("Notif Admin Terkirim:", data))
+            .catch(err => console.error("Gagal push dari admin:", err));
+        }
+
         let isFirstLoad = true;
 
         function loadRooms() {
@@ -139,11 +182,15 @@
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === "added" && !isFirstLoad) {
                         const data = change.doc.data();
-                        if (data.sender !== ADMIN_USER_RIGHT) hasNewBuyerMsg = true;
+                        if (data.sender !== ADMIN_USER_RIGHT) {
+                            hasNewBuyerMsg = true;
+                        }
                     }
                 });
 
-                if (hasNewBuyerMsg && audio) audio.play().catch(e => console.log(e));
+                if (hasNewBuyerMsg && audio) { 
+                    audio.play().catch(e => console.log("Audio diblokir Chrome:", e)); 
+                }
 
                 isFirstLoad = false;
 
