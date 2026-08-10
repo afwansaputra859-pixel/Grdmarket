@@ -64,9 +64,11 @@
         </div>
     </div>
 
+    <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, query, where, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, where, getDocs, deleteDoc, doc, enableNetwork } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
@@ -77,12 +79,30 @@
             appId: "1:90650745026:web:7c9dc54997c4970c8e035b"
         };
 
-        initializeApp(firebaseConfig);
-        const db = getFirestore();
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
         const ADMIN_USER_RIGHT = "Gilang"; 
-        const ADMIN_PASS_RIGHT = "kolakpisang123468"; 
+        const ADMIN_PASS_RIGHT = "12345"; 
 
+        const audio = document.getElementById("notifSound");
+
+        // IZIN NOTIFIKASI SPANDUK NATIVE BROWSER
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
+        document.addEventListener("click", () => {
+            if (audio) {
+                audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
+            }
+        }, { once: true });
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") enableNetwork(db);
+        });
+
+        // FUNGSI LOGIN
         window.loginAdmin = function() {
             const user = document.getElementById("adminUser").value.trim();
             const pass = document.getElementById("adminPass").value.trim();
@@ -91,7 +111,7 @@
                 sessionStorage.setItem("currentUser", "Gilang");
                 showDashboard();
             } else { 
-                alert("Login Gagal!"); 
+                alert("Login Gagal! Username atau Password Salah."); 
             }
         };
 
@@ -108,15 +128,20 @@
             location.reload();
         };
 
-        // HAPUS SELURUH ROOM DARI DASHBOARD ADMIN
+        // FITUR HAPUS SEMUA CHAT/ROOM TERSEBUT DARI DATABASE FIRESTORE
         window.hapusRoomDoc = async function(roomId) {
-            if (!confirm("Yakin mau hapus room chat ini selamanya?")) return;
-            const q = query(collection(db, "chats"), where("roomId", "==", roomId));
-            const snapshot = await getDocs(q);
-            snapshot.forEach(async (documentDoc) => {
-                await deleteDoc(doc(db, "chats", documentDoc.id));
-            });
-            alert("Room berhasil dihapus!");
+            if (!confirm("Yakin ingin menghapus seluruh obrolan room ini agar data tidak penuh?")) return;
+            try {
+                const q = query(collection(db, "chats"), where("roomId", "==", roomId));
+                const snapshot = await getDocs(q);
+                snapshot.forEach(async (documentDoc) => {
+                    await deleteDoc(doc(db, "chats", documentDoc.id));
+                });
+                alert("Daftar pesan room berhasil dihapus!");
+            } catch (err) {
+                console.error("Gagal hapus:", err);
+                alert("Gagal menghapus pesan!");
+            }
         };
 
         function formatWaktu(timestamp) {
@@ -124,10 +149,42 @@
             return date.getHours().toString().padStart(2, '0') + ":" + date.getMinutes().toString().padStart(2, '0');
         }
 
+        let isFirstLoad = true;
+
+        // FUNGSI UTAMA LOAD DAFTAR CHAT
         function loadRooms() {
             const roomContainer = document.getElementById("roomContainer");
             
             onSnapshot(collection(db, "chats"), (snapshot) => {
+                let hasNewBuyerMsg = false;
+                let lastBuyerMsg = null;
+
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added" && !isFirstLoad) {
+                        const data = change.doc.data();
+                        if (data.sender !== ADMIN_USER_RIGHT) {
+                            hasNewBuyerMsg = true;
+                            lastBuyerMsg = data;
+                        }
+                    }
+                });
+
+                // MAIN KAN SUARA + NOTIFIKASI SPANDUK DARI PEMBELI
+                if (hasNewBuyerMsg) {
+                    if (audio) audio.play().catch(e => console.log(e));
+                    if ("Notification" in window && Notification.permission === "granted" && lastBuyerMsg) {
+                        const notif = new Notification("💬 Pesan Masuk: " + lastBuyerMsg.sender, {
+                            body: lastBuyerMsg.text || "Foto/Pesan Baru",
+                            icon: "https://cdn-icons-png.flaticon.com/512/732/732200.png"
+                        });
+                        notif.onclick = function() {
+                            window.focus();
+                        };
+                    }
+                }
+
+                isFirstLoad = false;
+
                 let roomsMap = {};
                 snapshot.forEach((doc) => {
                     const chat = doc.data();
@@ -155,7 +212,7 @@
                         </div>
                         <div class="action-btns">
                             <a href="chat.html?room=${room.roomId}&produk=${encodeURIComponent(room.produk)}" class="btn-open-chat">Balas 💬</a>
-                            <button onclick="hapusRoomDoc('${room.roomId}')" class="btn-del-room">🗑️ Hapus</button>
+                            <button onclick="hapusRoomDoc('${room.roomId}')" class="btn-del-room">🗑️ Hapus Pesan</button>
                         </div>
                     `;
                     roomContainer.appendChild(div);
