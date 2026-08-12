@@ -88,12 +88,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // KUNCI REST API DIBAGI DUA SUPAYA TIDAK TERBACA SAMA SCANNER GITHUB PUSH PROTECTION
-        const k1 = "os_v2_app_";
-        const k2 = "mxzowt54p5dfdaou2afrkyb7g3usg43w6k3u6xml2bvcaeouzdyfdaovb7aoh6oxr57sncyq6fs4vuaewxpkdsu7xrazangwkrlutvy"; 
-        const ONESIGNAL_REST_KEY = k1 + k2;
-        const ONESIGNAL_APP_ID = "65f2eb4f-bc7f-4886-896a-f1165ee2bc3a";
-
         const OWNER_NAME = "Gilang"; 
         const isAdminMode = sessionStorage.getItem("isAdminLoggedIn") === "true";
         const currentUser = isAdminMode ? OWNER_NAME : (sessionStorage.getItem("currentUser") || "Pengunjung");
@@ -141,31 +135,27 @@
             return jam + ":" + menit;
         }
 
-        // FUNGSI PUSH NOTIFICATION MENGAMBANG DUA ARAH (ONESIGNAL)
+        // =========================================================================
+        // 🔔 FUNGSI PUSH NOTIFIKASI MENGAMBANG DUA ARAH (LANGSUNG DARI BROWSER SERVICE WORKER)
+        // =========================================================================
         function kirimNotifPush(pengirim, teksPesan) {
-            let targetUrl;
-            if (pengirim === OWNER_NAME) {
-                // Jika Admin/Penjual yang chat -> Pembeli klik notif diarahin balik ke Room Chat
-                targetUrl = window.location.href; 
-            } else {
-                // Jika Pembeli yang chat -> Admin klik notif langsung diarahin ke Admin Panel (admin.html)
-                targetUrl = "https://afwansaputra859-pixel.github.io/Grdmarket/admin.html"; 
-            }
+            let targetUrl = (pengirim === OWNER_NAME) 
+                ? window.location.href 
+                : "https://afwansaputra859-pixel.github.io/Grdmarket/admin.html";
 
-            fetch('https://onesignal.com/api/v1/notifications', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json; charset=utf-8',
-                    'Authorization': 'Basic ' + ONESIGNAL_REST_KEY
-                },
-                body: JSON.stringify({
-                    app_id: ONESIGNAL_APP_ID,
-                    included_segments: ["Subscribed Users"],
-                    headings: {"en": "💬 Pesan dari " + pengirim},
-                    contents: {"en": teksPesan},
-                    url: targetUrl
-                })
-            }).catch(err => console.error("Gagal push:", err));
+            if ("Notification" in window && Notification.permission === "granted") {
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then((registration) => {
+                        registration.showNotification("💬 Pesan baru dari " + pengirim, {
+                            body: teksPesan,
+                            icon: "https://cdn-icons-png.flaticon.com/512/732/732200.png",
+                            badge: "https://cdn-icons-png.flaticon.com/512/732/732200.png",
+                            vibrate: [200, 100, 200],
+                            data: { url: targetUrl }
+                        });
+                    }).catch(err => console.log("SW Notification err:", err));
+                }
+            }
         }
 
         // FITUR HAPUS ROOM CHAT (UNTUK ADMIN)
@@ -258,7 +248,7 @@
                     timestamp: serverTimestamp()
                 });
 
-                // PEMICU KIRIM NOTIFIKASI MENGAMBANG KE HP PENERIMA
+                // PEMICU NOTIFIKASI PUSH MENGAMBANG KE HP SEBELAH
                 kirimNotifPush(currentUser, pesan);
 
                 input.value = "";
