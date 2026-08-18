@@ -3,260 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Private Chat Transaksi</title>
+    <title>Private Chat Toko</title>
 
+    <!-- FIREBASE SDK (COMPAT VERSION) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <!-- ONESIGNAL SDK -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
-          appId: "65f2eb4f-bc7f-4651-81d4-d00b15603f36",
+          appId: "65f2eb4f-bc7f-4886-896a-f1165ee2bc3a",
           notifyButton: { enable: false }
         });
-
-        // POP-UP IZIN NOTIFIKASI DI LAYAR (CUMA MUNCUL 1 KALI SAJA)
-        if (!OneSignal.Notifications.permission) {
-            OneSignal.Notifications.requestPermission();
-        }
       });
     </script>
 
     <style>
-        body { font-family: Arial, sans-serif; background: #eef2f5; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { background: #007bff; color: white; padding: 10px 15px; text-align: center; font-weight: bold; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
-        header a { color: white; text-decoration: none; font-size: 13px; background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 4px; }
-
-        .btn-delete-all { background: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
-
-        .chat-container { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-        
-        .message-wrapper { display: flex; flex-direction: column; max-width: 80%; position: relative; }
-        .message-wrapper.me { align-self: flex-end; align-items: flex-end; }
-        .message-wrapper.other { align-self: flex-start; align-items: flex-start; }
-
-        .sender-name { font-size: 11px; color: #666; margin-bottom: 3px; font-weight: bold; display: flex; align-items: center; gap: 4px; }
-        .badge-owner { background: #28a745; color: white; font-size: 9px; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; }
-
-        .message-box { display: flex; align-items: flex-end; gap: 5px; }
-        .me .message-box { flex-direction: row-reverse; }
-
-        .message { padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; position: relative; }
-        .me .message { background: #007bff; color: white; border-bottom-right-radius: 2px; }
-        .other .message { background: white; color: #333; border-bottom-left-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        
-        .msg-time { font-size: 10px; opacity: 0.75; margin-top: 4px; text-align: right; display: block; }
-        .system { background: #fff3cd; color: #856404; align-self: center; font-size: 12px; text-align: center; width: 90%; padding: 8px; border-radius: 6px; border: 1px solid #ffeeba; }
-        
-        .chat-input { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; align-items: center; gap: 6px; }
-        .chat-input input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
-        .btn-upload { background: #6c757d; color: white; border: none; padding: 10px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        .btn-kirim { background: #28a745; color: white; border: none; padding: 10px 18px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        body { font-family: Arial, sans-serif; margin: 0; background: #e5ddd5; display: flex; flex-direction: column; height: 100vh; }
+        header { background: #075e54; color: white; padding: 15px; text-align: center; font-weight: bold; }
+        #chatBox { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 75%; padding: 10px 14px; border-radius: 8px; font-size: 14px; word-wrap: break-word; }
+        .buyer { background: #dcf8c6; align-self: flex-end; }
+        .admin { background: #ffffff; align-self: flex-start; }
+        .input-box { display: flex; padding: 10px; background: #eee; }
+        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none; }
+        button { background: #128c7e; color: white; border: none; padding: 10px 15px; margin-left: 5px; border-radius: 50%; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <header>
-        <a href="index.html">⬅️ Toko</a>
-        <span>Private Chat Transaksi</span>
-        <button id="btnDeleteRoom" class="btn-delete-all" style="display:none;" onclick="hapusSemuaChatRoom()">🗑️ Hapus Room</button>
-    </header>
-
-    <div class="chat-container" id="chatBox"></div>
-
-    <div class="chat-input">
-        <label for="imageInput" class="btn-upload">📷</label>
-        <input type="file" id="imageInput" accept="image/*" style="display:none;">
-        <input type="text" id="pesanInput" placeholder="Ketik pesan...">
-        <button id="btnKirim" class="btn-kirim">Kirim</button>
+    <header id="chatHeader">Private Chat</header>
+    <div id="chatBox"></div>
+    <div class="input-box">
+        <input type="text" id="msgInput" placeholder="Ketik pesan..." onkeypress="if(event.key==='Enter') kirimPesan()">
+        <button onclick="kirimPesan()">➤</button>
     </div>
 
-    <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, serverTimestamp, getDocs, deleteDoc, doc, enableNetwork } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
+    <script>
+        // KONFIGURASI FIREBASE SESUAI SCREENSHOT
         const firebaseConfig = {
-            apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWi4uKtK-WMeYD2U",
+            apiKey: "AIzaSyBbsDmS4Hkqf_PC7XwAWI4uKtK-WMeYD2U",
             authDomain: "website-611eb.firebaseapp.com",
+            databaseURL: "https://website-611eb-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "website-611eb",
             storageBucket: "website-611eb.firebasestorage.app",
             messagingSenderId: "90650745026",
             appId: "1:90650745026:web:7c9dc54997c4970c8e035b"
         };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        const OWNER_NAME = "Gilang"; 
-        const isAdminMode = sessionStorage.getItem("isAdminLoggedIn") === "true";
-        const currentUser = isAdminMode ? OWNER_NAME : (sessionStorage.getItem("currentUser") || "Pengunjung");
-
+        // AMBIL DATA URL (ROOM & PRODUK)
         const urlParams = new URLSearchParams(window.location.search);
-        const roomId = urlParams.get('room') || 'general_room';
-        const produk = urlParams.get('produk') || 'Produk Game';
+        const roomId = urlParams.get('room') || "default_room";
+        const namaProduk = urlParams.get('produk') || "Produk";
+        const currentUser = sessionStorage.getItem("currentUser") || "Pembeli";
 
-        const audio = document.getElementById("notifSound");
+        document.getElementById("chatHeader").innerText = "Chat Order: " + namaProduk;
 
-        // UNLOCK AUDIO AUTOPLAY
-        document.addEventListener("click", () => {
-            if (audio) {
-                audio.play().then(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                }).catch(() => {});
-            }
-        }, { once: true });
-
-        // AUTO-RECONNECT CHROME
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "visible") {
-                enableNetwork(db);
-            }
+        // BACA PESAN REALTIME DARI FIREBASE
+        db.ref("chats/" + roomId).on("child_added", function(snapshot) {
+            const data = snapshot.val();
+            const box = document.getElementById("chatBox");
+            const div = document.createElement("div");
+            div.className = "msg " + (data.sender === "Admin" ? "admin" : "buyer");
+            div.innerText = data.sender + ": " + data.text;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
         });
 
-        if (isAdminMode) {
-            document.getElementById("btnDeleteRoom").style.display = "block";
-        }
+        // KIRIM PESAN KE FIREBASE & MEMICU NOTIFIKASI
+        function kirimPesan() {
+            const input = document.getElementById("msgInput");
+            const text = input.value.trim();
+            if (text === "") return;
 
-        const chatBox = document.getElementById("chatBox");
-        const notif = document.createElement("div");
-        notif.className = "system";
-        notif.innerHTML = "🔒 <b>Private Order Room</b><br>Produk: <b>" + decodeURIComponent(produk) + "</b><br>Anda: <b>" + currentUser + "</b>";
-        chatBox.appendChild(notif);
-
-        const messagesRef = collection(db, "chats");
-        const q = query(messagesRef, where("roomId", "==", roomId));
-
-        function formatWaktu(timestamp) {
-            let date = (timestamp && timestamp.toDate) ? timestamp.toDate() : new Date();
-            let jam = date.getHours().toString().padStart(2, '0');
-            let menit = date.getMinutes().toString().padStart(2, '0');
-            return jam + ":" + menit;
-        }
-
-        // =========================================================================
-        // 🔔 FUNGSI PUSH NOTIFIKASI MENGAMBANG DUA ARAH (LANGSUNG DARI BROWSER SERVICE WORKER)
-        // =========================================================================
-        function kirimNotifPush(pengirim, teksPesan) {
-            let targetUrl = (pengirim === OWNER_NAME) 
-                ? window.location.href 
-                : "https://afwansaputra859-pixel.github.io/Grdmarket/admin.html";
-
-            if ("Notification" in window && Notification.permission === "granted") {
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.ready.then((registration) => {
-                        registration.showNotification("💬 Pesan baru dari " + pengirim, {
-                            body: teksPesan,
-                            icon: "https://cdn-icons-png.flaticon.com/512/732/732200.png",
-                            badge: "https://cdn-icons-png.flaticon.com/512/732/732200.png",
-                            vibrate: [200, 100, 200],
-                            data: { url: targetUrl }
-                        });
-                    }).catch(err => console.log("SW Notification err:", err));
-                }
-            }
-        }
-
-        // FITUR HAPUS ROOM CHAT (UNTUK ADMIN)
-        window.hapusSemuaChatRoom = async function() {
-            if (!confirm("Yakin mau hapus seluruh obrolan room ini?")) return;
-            const snapshot = await getDocs(q);
-            snapshot.forEach(async (documentDoc) => {
-                await deleteDoc(doc(db, "chats", documentDoc.id));
-            });
-            alert("Room berhasil dihapus!");
-            window.location.href = "admin.html";
-        };
-
-        let isFirstLoad = true;
-
-        onSnapshot(q, (snapshot) => {
-            let hasNewOtherMsg = false;
-
-            snapshot.docChanges().forEach((change) => {
-                if (change.type === "added" && !isFirstLoad) {
-                    const newMsg = change.doc.data();
-                    if (newMsg.sender !== currentUser) {
-                        hasNewOtherMsg = true;
-                    }
-                }
+            db.ref("chats/" + roomId).push({
+                sender: currentUser,
+                text: text,
+                timestamp: Date.now()
             });
 
-            if (hasNewOtherMsg && audio) {
-                audio.play().catch(e => console.log("Audio diblokir Chrome:", e));
-            }
-
-            isFirstLoad = false;
-            chatBox.innerHTML = "";
-            chatBox.appendChild(notif);
-
-            let messages = [];
-            snapshot.forEach((document) => { messages.push({ id: document.id, ...document.data() }); });
-            messages.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
-
-            messages.forEach((data) => {
-                const wrapper = document.createElement("div");
-                const senderTag = document.createElement("div");
-                const msgBox = document.createElement("div");
-                const msgDiv = document.createElement("div");
-
-                senderTag.className = "sender-name";
-                msgBox.className = "message-box";
-                msgDiv.className = "message";
-
-                let ownerBadge = (data.sender === OWNER_NAME) ? `<span class="badge-owner">PENJUAL</span>` : "";
-
-                if (data.sender === currentUser) {
-                    wrapper.className = "message-wrapper me";
-                    senderTag.innerHTML = "Kamu (" + data.sender + ") " + ownerBadge;
-                } else {
-                    wrapper.className = "message-wrapper other";
-                    senderTag.innerHTML = data.sender + " " + ownerBadge;
-                }
-
-                if (data.text) {
-                    const textP = document.createElement("div");
-                    textP.innerText = data.text;
-                    msgDiv.appendChild(textP);
-                }
-
-                const timeSpan = document.createElement("span");
-                timeSpan.className = "msg-time";
-                timeSpan.innerText = formatWaktu(data.timestamp);
-                msgDiv.appendChild(timeSpan);
-
-                msgBox.appendChild(msgDiv);
-                wrapper.appendChild(senderTag);
-                wrapper.appendChild(msgBox);
-                chatBox.appendChild(wrapper);
-            });
-            chatBox.scrollTop = chatBox.scrollHeight;
-        });
-
-        async function kirimPesan() {
-            const input = document.getElementById("pesanInput");
-            const pesan = input.value.trim();
-            if (pesan === "") return;
-
-            try {
-                await addDoc(messagesRef, {
-                    roomId: roomId,
-                    text: pesan,
-                    sender: currentUser,
-                    produk: produk,
-                    timestamp: serverTimestamp()
+            // PICU SPANDUK NOTIFIKASI MELAYANG DI HP (WEB PUSH)
+            if (window.Notification && Notification.permission === "granted") {
+                new Notification("Pesan Baru dari " + currentUser, {
+                    body: text,
+                    icon: "https://via.placeholder.com/128"
                 });
+            }
 
-                // PEMICU NOTIFIKASI PUSH MENGAMBANG KE HP SEBELAH
-                kirimNotifPush(currentUser, pesan);
-
-                input.value = "";
-            } catch (error) { console.error("Gagal kirim:", error); }
+            input.value = "";
         }
-
-        document.getElementById("btnKirim").addEventListener("click", kirimPesan);
-        document.getElementById("pesanInput").addEventListener("keypress", (e) => { if (e.key === "Enter") kirimPesan(); });
     </script>
 </body>
 </html>
