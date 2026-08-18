@@ -9,6 +9,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digital Marketplace</title>
+
+    <!-- ONESIGNAL SDK (MEMINTA IZIN NOTIFIKASI SAAT TOKO DIBUKA) -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "65f2eb4f-bc7f-4651-81d4-d00b15603f36",
+          notifyButton: { enable: false }
+        });
+
+        // MINTA IZIN NOTIFIKASI SECARA OTOMATIS
+        if (!OneSignal.Notifications.permission) {
+            OneSignal.Notifications.requestPermission();
+        }
+      });
+    </script>
+
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f4f4f4; }
         header { background: #007bff; color: white; padding: 15px; text-align: center; border-radius: 8px; }
@@ -23,7 +41,7 @@
         .modal-content { background: white; padding: 20px; border-radius: 8px; width: 320px; text-align: center; position: relative; }
         .close-btn { position: absolute; top: 10px; right: 15px; font-size: 20px; cursor: pointer; font-weight: bold; }
         .qris-img { width: 180px; margin: 15px 0; border: 1px solid #ddd; padding: 5px; border-radius: 5px; }
-        .btn-confirm { background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
+        .btn-confirm { background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; width: 100%; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -56,7 +74,7 @@
             <span class="close-btn" onclick="tutupModal()">&times;</span>
             <h3 id="modalTitle">Pembayaran</h3>
             <p id="modalPrice" style="color:#28a745; font-weight:bold;"></p>
-            
+
             <hr>
             <p style="font-size: 14px; margin-bottom: 5px;">Scan QRIS / Transfer DANA:</p>
             <p style="font-weight: bold; color: #118EEA; margin: 0;">DANA: 083137201752</p>
@@ -73,11 +91,9 @@
 
         function bukaModal(namaProduk, harga, idStok) {
             var userPembeli = sessionStorage.getItem("currentUser") || "User";
-            // KODE ROOM KONSISTEN: NamaPembeli_NamaProduk (Biar chat lama selalu terbuka lagi)
             var cleanProduk = namaProduk.replace(/\s+/g, '');
             var roomId = "order_" + userPembeli + "_" + cleanProduk;
 
-            // Jika user pernah transaksi/chat produk ini sebelumnya, langsung masuk ke chat tanpa kurangi stok lagi!
             if (localStorage.getItem("hasOrder_" + roomId)) {
                 window.location.href = "chat.html?room=" + encodeURIComponent(roomId) + "&produk=" + encodeURIComponent(namaProduk);
                 return;
@@ -108,14 +124,12 @@
             var cleanProduk = produkDipilih.replace(/\s+/g, '');
             var roomId = "order_" + userPembeli + "_" + cleanProduk;
 
-            // Kurangi stok HANYA saat transaksi pertama kali dibuat
             if (!localStorage.getItem("hasOrder_" + roomId)) {
                 var elemenStok = document.getElementById("stok-" + idStokDipilih);
                 var jumlahStok = parseInt(elemenStok.innerText);
                 if (jumlahStok > 0) {
                     elemenStok.innerText = jumlahStok - 1;
                 }
-                // Tanda bahwa user sudah punya room aktif untuk produk ini
                 localStorage.setItem("hasOrder_" + roomId, "true");
             }
 
